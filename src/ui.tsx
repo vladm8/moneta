@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -52,6 +53,9 @@ import {
   today,
   summary,
   categorySpent,
+  CURRENCIES,
+  emptyLedger,
+  type Currency,
 } from "./engine";
 export type FinanceContext = {
   data: Data;
@@ -131,13 +135,33 @@ export function Empty({
 export function Money({
   value,
   decimals = true,
+  fit = false,
 }: {
   value: number;
   decimals?: boolean;
+  fit?: boolean;
 }) {
   const { fmt } = useFinance();
   const [shown, setShown] = useState(value);
   const current = useRef(value);
+  const textRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const text = textRef.current;
+    const container = text?.parentElement;
+    if (!fit || !text || !container) return;
+    const resize = () => {
+      text.style.fontSize = "inherit";
+      const fontSize = parseFloat(getComputedStyle(text).fontSize);
+      const available = container.clientWidth;
+      const width = text.getBoundingClientRect().width;
+      if (available > 0 && width > available)
+        text.style.fontSize = `${(fontSize * available) / width}px`;
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [fit, shown, fmt, decimals]);
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setShown(value);
@@ -157,7 +181,11 @@ export function Money({
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span className="number">{fmt(shown, decimals)}</span>;
+  return (
+    <span className="number" ref={textRef}>
+      {fmt(shown, decimals)}
+    </span>
+  );
 }
 export function Modal({
   children,
@@ -311,6 +339,7 @@ export function EntryForm({
                 kind === "income" ? "" : String(f.get("category") || ""),
               ...(kind === "transfer" ? { goalId: String(f.get("goal")) } : {}),
               ...(entry?.recurringId ? { recurringId: entry.recurringId } : {}),
+              ...(entry?.sourceId ? { sourceId: entry.sourceId } : {}),
             };
             const next = recordEntry(ledger, item);
             updateLedger(() => next);
@@ -646,7 +675,7 @@ export function CategoryDetails({ id }: { id: string }) {
   );
 }
 export function GoalForm({ goal }: { goal?: Goal }) {
-  const { t, updateLedger, close, toast } = useFinance();
+  const { t, data, update, close, toast } = useFinance();
   const [error, setError] = useState("");
   return (
     <>
@@ -666,14 +695,31 @@ export function GoalForm({ goal }: { goal?: Goal }) {
               date: String(f.get("date")),
               color: goal?.color || colors[0],
               archived: goal?.archived || false,
+              initialSaved: parseMoney(String(f.get("initialSaved") || "0")),
+              description: String(f.get("description") || "").trim(),
+              icon: String(f.get("icon") || "leaf"),
+              createdAt: goal?.createdAt || today(),
             };
             if (!item.name) throw new Error("Enter a name.");
-            updateLedger((l) => ({
-              ...l,
-              goals: goal
-                ? l.goals.map((g) => (g.id === goal.id ? item : g))
-                : [...l.goals, item],
-            }));
+            const currency = (
+              goal ? data.currency : String(f.get("currency"))
+            ) as Currency;
+            update((d) => {
+              const l = d.ledgers[currency] || emptyLedger();
+              return {
+                ...d,
+                currency,
+                ledgers: {
+                  ...d.ledgers,
+                  [currency]: {
+                    ...l,
+                    goals: goal
+                      ? l.goals.map((g) => (g.id === goal.id ? item : g))
+                      : [...l.goals, item],
+                  },
+                },
+              };
+            });
             toast("Goal saved");
             close();
           } catch (err) {
@@ -702,6 +748,52 @@ export function GoalForm({ goal }: { goal?: Goal }) {
         <label>
           {t("Target date (optional)")}
           <input name="date" type="date" defaultValue={goal?.date} />
+        </label>
+        <div className="form-grid">
+          <label>
+            {t("Currency")}
+            <select
+              name="currency"
+              defaultValue={data.currency}
+              disabled={!!goal}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("Opening savings")}
+            <input
+              name="initialSaved"
+              inputMode="decimal"
+              required
+              defaultValue={((goal?.initialSaved || 0) / 100).toFixed(2)}
+            />
+          </label>
+        </div>
+        <p className="field-help">
+          {t(
+            "Opening savings are existing money, not income. Add later deposits as contributions.",
+          )}
+        </p>
+        <label>
+          {t("Icon")}
+          <select name="icon" defaultValue={goal?.icon || "leaf"}>
+            {icons.map((icon) => (
+              <option key={icon} value={icon}>
+                {t(icon[0].toUpperCase() + icon.slice(1))}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t("Description")}
+          <textarea
+            name="description"
+            maxLength={500}
+            defaultValue={goal?.description}
+          />
         </label>
         <ErrorText error={error} />
         <div className="form-actions">
@@ -827,11 +919,15 @@ export function TransactionList({
               <small>
                 {cat?.name ||
                   t(
-                    e.type === "income"
-                      ? "Income"
-                      : e.type === "transfer"
-                        ? "Savings transfer"
-                        : "Uncategorized",
+                    e.type === "refund"
+                      ? "Refund"
+                      : e.type === "internal"
+                        ? "Internal transfer"
+                        : e.type === "income"
+                          ? "Income"
+                          : e.type === "transfer"
+                            ? "Savings transfer"
+                            : "Uncategorized",
                   )}
               </small>
             </button>
@@ -843,7 +939,11 @@ export function TransactionList({
             </span>
             <span className={`transaction-amount ${e.type}`}>
               <span>
-                {e.type === "income" ? "+" : e.type === "expense" ? "−" : "↗"}
+                {e.type === "income" || e.type === "refund"
+                  ? "+"
+                  : e.type === "expense"
+                    ? "−"
+                    : "↗"}
               </span>
               {fmt(e.amount)}
             </span>

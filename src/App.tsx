@@ -23,6 +23,7 @@ import {
   Menu,
   X,
   ArrowRight,
+  Wallet,
 } from "lucide-react";
 import {
   type Data,
@@ -51,12 +52,14 @@ import { Overview } from "./Overview";
 import { Budget } from "./Budget";
 import { Transactions, Analytics, Goals, Settings } from "./Tools";
 import { AmbientBackground } from "./AmbientBackground";
+import { Portfolio } from "./Portfolio";
 const navigation = [
   ["overview", "Overview", LayoutDashboard],
   ["budget", "Budget", SlidersHorizontal],
   ["transactions", "Transactions", ArrowLeftRight],
   ["analytics", "Analytics", ChartNoAxesCombined],
   ["goals", "Savings goals", Leaf],
+  ["portfolio", "Portfolio", Wallet],
   ["settings", "Settings", SettingsIcon],
 ] as const;
 const headers: Record<Page, [string, string]> = {
@@ -71,6 +74,10 @@ const headers: Record<Page, [string, string]> = {
     "Real numbers. Useful perspective.",
   ],
   goals: ["Good things are worth planning for", "Turn a someday into a plan."],
+  portfolio: [
+    "Your assets, together",
+    "One estimated value. Every currency accounted for.",
+  ],
   settings: [
     "Make yourself at home",
     "Your preferences. Your data. Your control.",
@@ -92,7 +99,7 @@ function Welcome({
   const [error, setError] = useState("");
   const t = (s: string) => translate(lang, s);
   return (
-    <div className="onboarding">
+    <div className="onboarding" data-step={step}>
       <AmbientBackground />
       <div className="welcome-art">
         <div className="brand">
@@ -137,7 +144,7 @@ function Welcome({
           <option value="uk">Українська</option>
         </select>
         <div className="welcome-form-inner">
-          <span className="eyebrow">01 / MONETA</span>
+          <span className="eyebrow">MONETA</span>
           <h2>{t("Welcome to MONETA")}</h2>
           <p>{t("Just a few details. Then it’s all yours.")}</p>
           {step === 0 ? (
@@ -330,18 +337,24 @@ export default function App() {
   }, [account, ready, loadError]);
   useEffect(() => {
     const query = matchMedia("(prefers-color-scheme: dark)");
-    const apply = () =>
-      (document.documentElement.dataset.theme =
-        data.theme === "system"
+    const apply = () => {
+      const theme = !data.onboarded
+        ? "dark"
+        : data.theme === "system"
           ? query.matches
             ? "dark"
             : "light"
-          : data.theme);
+          : data.theme;
+      document.documentElement.dataset.theme = theme;
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute("content", theme === "dark" ? "#030512" : "#f2f4fa");
+    };
     apply();
     query.addEventListener("change", apply);
     document.documentElement.lang = data.language;
     return () => query.removeEventListener("change", apply);
-  }, [data.theme, data.language]);
+  }, [data.theme, data.language, data.onboarded]);
   useEffect(() => {
     if (!ready) return;
     try {
@@ -427,11 +440,12 @@ export default function App() {
   };
   if (!ready)
     return (
-      <div className="loading">
-        <div className="brand">
-          <span className="brand-mark">m</span>moneta.
+      <div className="boot-screen" role="status" aria-label={t("Loading")}>
+        <div className="boot-brand" aria-hidden="true">
+          <span className="boot-mark">m</span>moneta
+          <span className="boot-period">.</span>
         </div>
-        <span className="loading-line" />
+        <span className="boot-track" aria-hidden="true" />
       </div>
     );
   if (loadError)
@@ -537,7 +551,6 @@ export default function App() {
               >
                 <Icon size={19} strokeWidth={1.6} />
                 <span>{t(label)}</span>
-                {page === key && <span className="nav-dot" />}
               </button>
             ))}
           </nav>
@@ -674,7 +687,7 @@ export default function App() {
               </button>
             </div>
           </header>
-          <div className="page-content" key={page + month}>
+          <div className="page-content" data-page={page} key={page + month}>
             {page === "overview" ? (
               <Overview />
             ) : page === "budget" ? (
@@ -685,14 +698,14 @@ export default function App() {
               <Analytics />
             ) : page === "goals" ? (
               <Goals />
+            ) : page === "portfolio" ? (
+              <Portfolio />
             ) : (
               <Settings reset={reset} />
             )}
           </div>
           <footer className="app-footer">
-            <span>
-              MONETA<span>®</span>
-            </span>
+            <span>MONETA</span>
             <span>{t("Your money. Your peace of mind.")}</span>
           </footer>
         </main>

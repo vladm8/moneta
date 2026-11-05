@@ -1,0 +1,100 @@
+/* Short, non-blocking entrances. No timers or artificial loading delays. */
+.onboarding .welcome-art > .brand,
+.onboarding .welcome-art > .eyebrow,
+.onboarding .welcome-art > h1,
+.onboarding .welcome-art > p,
+.onboarding .welcome-composition,
+.onboarding .welcome-foot,
+.onboarding .welcome-language,
+.onboarding .welcome-form-inner {
+  animation: welcome-arrive 620ms var(--ease) backwards;
+}
+.onboarding .welcome-art > .eyebrow {
+  animation-delay: 50ms;
+}
+.onboarding .welcome-art > h1 {
+  animation-delay: 80ms;
+}
+.onboarding .welcome-art > p {
+  animation-delay: 110ms;
+}
+.onboarding .welcome-composition {
+  animation-delay: 150ms;
+}
+.onboarding .welcome-foot {
+  animation-delay: 180ms;
+}
+.onboarding .welcome-form-inner {
+  animation-delay: 120ms;
+}
+.onboarding .welcome-language {
+  animation-name: entrance-fade;
+}
+.app-shell .topbar,
+.app-shell .page-header {
+  animation: entrance-fade 350ms ease-out backwards;
+}
+.page-content[data-page="overview"] {
+  animation: none;
+}
+.overview-layout > * {
+  animation: dashboard-arrive 440ms var(--ease) backwards;
+}
+.overview-layout > .overview-metrics {
+  animation-delay: 45ms;
+}
+.overview-layout > .dashboard-portfolio {
+  animation-delay: 80ms;
+}
+.overview-layout > .allocation-panel {
+  animation-delay: 110ms;
+}
+.overview-layout > .budget-overview {
+  animation-delay: 140ms;
+}
+.overview-layout > .activity-section {
+  animation-delay: 170ms;
+}
+.overview-layout > .goal-preview {
+  animation-delay: 200ms;
+}
+.onboarding .welcome-form-inner:focus-within,
+.overview-layout > :focus-within {
+  animation: none;
+}
+@keyframes welcome-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dashboard-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes entrance-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding *,
+  .app-shell .topbar,
+  .app-shell .page-header,
+  .overview-layout > * {
+    animation: none !important;
+  }
+}

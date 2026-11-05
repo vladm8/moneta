@@ -26,6 +26,7 @@ import {
   Money,
   Confirm,
   RecurringForm,
+  CategoryIcon,
 } from "./ui";
 import {
   entriesFor,
@@ -46,12 +47,17 @@ import {
 } from "./engine";
 import { SpendingTrend } from "./Charts";
 import { deleteData } from "./persistence";
+import { goalPlan } from "./finance";
+import { GoalPlanner } from "./GoalPlanner";
+import { PortfolioSummary } from "./Portfolio";
+import { TransactionImport } from "./ImportWizard";
 export function Transactions() {
   const { ledger, month, t, fmt, modal } = useFinance();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
   const [sort, setSort] = useState("new");
+  const [importing, setImporting] = useState(false);
   const es = entriesFor(ledger, month)
     .filter(
       (e) =>
@@ -75,8 +81,16 @@ export function Transactions() {
             : b.date.localeCompare(a.date),
     );
   const s = summary(ledger, month);
+  if (importing)
+    return <TransactionImport onClose={() => setImporting(false)} />;
   return (
     <>
+      <div className="page-toolbar">
+        <button className="button secondary" onClick={() => setImporting(true)}>
+          <Upload size={16} />
+          {t("Import transactions")}
+        </button>
+      </div>
       <div className="transaction-summary">
         <div>
           <span>{t("Income")}</span>
@@ -122,6 +136,8 @@ export function Transactions() {
           <option value="income">{t("Income")}</option>
           <option value="expense">{t("Expense")}</option>
           <option value="transfer">{t("Savings transfer")}</option>
+          <option value="refund">{t("Refund")}</option>
+          <option value="internal">{t("Internal transfer")}</option>
         </select>
         <select
           aria-label={t("Newest first")}
@@ -194,7 +210,10 @@ export function Analytics() {
     const m = shiftMonth(month, i - 5);
     return { month: m, ...summary(ledger, m) };
   });
-  const max = Math.max(...months.flatMap((m) => [m.income, m.spent]), 100);
+  const max = Math.max(
+    ...months.flatMap((m) => [m.income, Math.abs(m.spent)]),
+    100,
+  );
   const categories = ledger.categories.map((c) => ({
     ...c,
     spent: categorySpent(ledger, month, c.id),
@@ -204,13 +223,19 @@ export function Analytics() {
     .map((c) => ({
       ...c,
       spent: entriesFor(ledger, month)
-        .filter((e) => e.type === "expense" && e.categoryId === c.id)
-        .reduce((sum, e) => sum + e.amount, 0),
+        .filter(
+          (e) =>
+            ["expense", "refund"].includes(e.type) && e.categoryId === c.id,
+        )
+        .reduce(
+          (sum, e) => sum + (e.type === "refund" ? -e.amount : e.amount),
+          0,
+        ),
     }))
     .sort((a, b) => b.spent - a.spent);
   const uncategorized = entriesFor(ledger, month)
-    .filter((e) => e.type === "expense" && !e.categoryId)
-    .reduce((s, e) => s + e.amount, 0);
+    .filter((e) => ["expense", "refund"].includes(e.type) && !e.categoryId)
+    .reduce((s, e) => s + (e.type === "refund" ? -e.amount : e.amount), 0);
   return (
     <>
       <div className="comparison-metrics">
@@ -224,7 +249,7 @@ export function Analytics() {
                 )}
               </span>
               <strong>
-                <Money value={current[key]} />
+                <Money value={current[key]} fit />
               </strong>
               <small
                 className={
@@ -257,6 +282,7 @@ export function Analytics() {
         })}
       </div>
       <div className="analytics-grid">
+        <PortfolioSummary compact />
         <section className="panel">
           <SectionHeader
             title="Monthly spending"
@@ -296,7 +322,7 @@ export function Analytics() {
       <div className="analytics-grid equal">
         <section className="panel">
           <SectionHeader title="Spending by category" />
-          {current.spent ? (
+          {expenseCats.some((c) => c.spent !== 0) || uncategorized !== 0 ? (
             <div className="horizontal-bars">
               {[
                 ...expenseCats,
@@ -311,7 +337,7 @@ export function Analytics() {
                     ]
                   : []),
               ]
-                .filter((c) => c.spent > 0)
+                .filter((c) => c.spent !== 0)
                 .map((c) => (
                   <div key={c.id}>
                     <div>
@@ -319,7 +345,14 @@ export function Analytics() {
                       <strong>{fmt(c.spent)}</strong>
                     </div>
                     <Progress
-                      value={(c.spent / current.spent) * 100}
+                      value={
+                        (Math.abs(c.spent) /
+                          (expenseCats.reduce(
+                            (s, c) => s + Math.abs(c.spent),
+                            Math.abs(uncategorized),
+                          ) || 1)) *
+                        100
+                      }
                       color={c.color}
                     />
                   </div>
@@ -346,7 +379,10 @@ export function Analytics() {
                   </div>
                   <div
                     className="bar expense-bar"
-                    style={{ height: `${(m.spent / max) * 100}%` }}
+                    style={{
+                      height: `${(Math.abs(m.spent) / max) * 100}%`,
+                      background: m.spent < 0 ? "var(--positive)" : undefined,
+                    }}
                     tabIndex={0}
                     role="img"
                     aria-label={`${m.month} ${t("Spent")}: ${fmt(m.spent)}`}
@@ -407,7 +443,7 @@ function GoalDetails({ goal }: { goal: Goal }) {
   const es = ledger.entries
     .filter((e) => e.goalId === goal.id && e.type === "transfer")
     .sort((a, b) => b.date.localeCompare(a.date));
-  const total = es.reduce((s, e) => s + e.amount, 0);
+  const total = goalPlan(goal, ledger).saved;
   return (
     <>
       <span className="eyebrow">{t("Savings goals")}</span>
@@ -416,6 +452,12 @@ function GoalDetails({ goal }: { goal: Goal }) {
         {fmt(total)} <small>/ {fmt(goal.target)}</small>
       </p>
       <Progress value={(total / goal.target) * 100} color={goal.color} />
+      <GoalPlanner goal={goal} />
+      {!!goal.initialSaved && (
+        <p>
+          {t("Opening savings")}: {fmt(goal.initialSaved)}
+        </p>
+      )}
       <h3>{t("Contribution history")}</h3>
       {es.length ? (
         <TransactionList entries={es} />
@@ -433,12 +475,25 @@ function GoalDetails({ goal }: { goal: Goal }) {
   );
 }
 export function Goals() {
-  const { ledger, t, fmt, modal, updateLedger } = useFinance();
+  const { ledger, data, update, t, fmt, modal, updateLedger } = useFinance();
   const [archived, setArchived] = useState(false);
   const active = ledger.goals.filter((g) => g.archived === archived);
   return (
     <>
       <div className="page-toolbar">
+        <label className="inline-currency">
+          {t("Currency")}
+          <select
+            value={data.currency}
+            onChange={(e) =>
+              update((d) => ({ ...d, currency: e.target.value as Currency }))
+            }
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
         <button className="text-button" onClick={() => setArchived(!archived)}>
           <Archive size={16} />
           {t(archived ? "Savings goals" : "Archived goals")}
@@ -451,9 +506,7 @@ export function Goals() {
       {active.length ? (
         <div className="goals-grid">
           {active.map((g, i) => {
-            const saved = ledger.entries
-              .filter((e) => e.type === "transfer" && e.goalId === g.id)
-              .reduce((s, e) => s + e.amount, 0);
+            const saved = goalPlan(g, ledger).saved;
             return (
               <section className="goal-card" key={g.id}>
                 <div className={`goal-art art-${i % 3}`}>
@@ -463,7 +516,9 @@ export function Goals() {
                   <span className="goal-art-label">
                     {String(i + 1).padStart(2, "0")} / MONETA
                   </span>
-                  <Leaf size={45} strokeWidth={0.8} />
+                  <CategoryIcon
+                    category={{ icon: g.icon || "leaf", color: g.color }}
+                  />
                 </div>
                 <div className="goal-card-body">
                   <div className="goal-card-heading">
@@ -535,6 +590,7 @@ export function Goals() {
                     </span>
                     <span>{g.date || ""}</span>
                   </div>
+                  <GoalPlanner goal={g} />
                   <button
                     className="button secondary full"
                     onClick={() =>
@@ -675,6 +731,7 @@ export function Settings({ reset }: { reset: () => void }) {
                 ["transactions", "Transactions"],
                 ["analytics", "Analytics"],
                 ["goals", "Savings goals"],
+                ["portfolio", "Portfolio"],
               ].map(([key, label]) => (
                 <option key={key} value={key}>
                   {t(label)}

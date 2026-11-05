@@ -162,6 +162,11 @@ h2,
 .positive {
   color: var(--positive);
 }
+.number {
+  display: inline-block;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
 .eyebrow {
   letter-spacing: 1.3px;
 }
@@ -205,6 +210,7 @@ h2,
   color: #fff;
 }
 .icon-button {
+  padding: 0;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -295,10 +301,6 @@ input::placeholder {
 }
 .nav-item.active svg {
   color: var(--green);
-}
-.nav-dot {
-  width: 4px;
-  height: 4px;
 }
 .nav-item.settings-nav {
   margin-top: 25px;
@@ -480,8 +482,14 @@ input::placeholder {
   border-color: color-mix(in srgb, var(--border) 55%, transparent);
   border-radius: 8px;
 }
-.transaction:hover {
+.transaction:hover,
+.transaction:focus-within {
   background: var(--glass-interactive);
+}
+.activity-section .transaction,
+.transaction-panel .transaction {
+  margin-inline: -10px;
+  padding-inline: 10px;
 }
 .transaction-name strong {
   font-size: 13px;
@@ -1079,9 +1087,24 @@ input::placeholder {
     --page-gutter: 18px;
   }
   .sidebar {
+    display: flex;
+    z-index: 50;
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform 280ms var(--ease),
+      visibility 280ms;
     width: 260px;
     padding: 28px 20px;
     background: var(--surface);
+  }
+  .sidebar.mobile-open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+  .sidebar.mobile-open .profile > .avatar {
+    display: grid;
+    flex: none;
   }
   .sidebar.mobile-open .brand {
     font-size: 28px;
@@ -1146,8 +1169,8 @@ input::placeholder {
   .metric-value {
     font-size: clamp(20px, 5.4vw, 31px);
     margin-top: 10px;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
   .metric-label {
     font-size: 10px;
@@ -1264,7 +1287,9 @@ input::placeholder {
   .transaction-summary strong,
   .comparison-metrics strong {
     font-size: 20px;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    min-width: 0;
   }
   .comparison-metrics small {
     font-size: 9px;
@@ -1343,7 +1368,122 @@ input::placeholder {
     opacity: 0.4;
   }
   .welcome-form {
-    background: var(--glass-primary);
+    background: transparent;
+    flex: 1;
+    padding: 16px 24px 24px;
+    position: static;
+    align-items: stretch;
+  }
+  .onboarding {
+    min-height: 100svh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    gap: clamp(8px, 3svh, 24px);
+    justify-content: space-between;
+  }
+  .onboarding .ambient-background {
+    z-index: -1;
+  }
+  .onboarding .ambient-background video {
+    opacity: 1;
+    object-position: 65% center;
+  }
+  .onboarding .ambient-veil {
+    background: #03051240;
+  }
+  .welcome-art {
+    min-height: 0;
+    padding: 24px 24px 0;
+    background: transparent;
+    border: 0;
+    overflow: visible;
+  }
+  .welcome-art .brand {
+    font-size: 26px;
+    padding-right: 110px;
+    min-height: 36px;
+  }
+  .welcome-art > .eyebrow {
+    margin-top: 18px;
+  }
+  .welcome-art h1 {
+    font-size: clamp(24px, 7vw, 32px);
+    letter-spacing: -0.8px;
+    margin: 8px 0;
+    max-width: 100%;
+    position: relative;
+  }
+  .welcome-composition,
+  .onboarding-progress,
+  .onboarding[data-step="1"] .welcome-art > :not(.brand) {
+    display: none;
+  }
+  .welcome-foot {
+    padding-top: 12px;
+    font-size: 10px;
+    color: #c6cce1;
+    line-height: 1.5;
+  }
+  .welcome-art > p,
+  .welcome-form-inner > p {
+    color: #c6cce1;
+  }
+  .welcome-form-inner {
+    margin-top: auto;
+    max-width: 460px;
+    margin-inline: auto;
+  }
+  .welcome-choices {
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .welcome-choices .button {
+    min-height: 48px;
+  }
+  .welcome-choices .text-button {
+    min-height: 44px;
+    margin-top: 0;
+  }
+  .onboarding[data-step="1"] {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .onboarding[data-step="1"] .welcome-form-inner {
+    margin-top: 0;
+  }
+  .welcome-language {
+    top: calc(24px + env(safe-area-inset-top));
+    right: 24px;
+    margin: 0;
+    min-height: 36px;
+    width: 100px;
+    background: #111526b3;
+    font-size: 12px;
+  }
+  .welcome-form-inner h2 {
+    margin: 8px 0;
+  }
+  .welcome-form-inner > p {
+    margin-bottom: 14px;
+  }
+  .welcome-form form label {
+    margin-block: 8px;
+  }
+}
+@media (max-width: 480px) {
+  .comparison-metrics,
+  .transaction-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .comparison-metrics > div,
+  .comparison-metrics > div:first-child,
+  .transaction-summary > div,
+  .transaction-summary > div:last-child {
+    padding: 16px;
+  }
+  .comparison-metrics strong,
+  .transaction-summary strong {
+    font-size: 26px;
   }
 }
 @media (max-width: 380px) {

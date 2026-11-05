@@ -21,6 +21,8 @@ import {
 } from "./ui";
 import { summary, entriesFor, categorySpent } from "./engine";
 import { Donut } from "./Charts";
+import { PortfolioSummary } from "./Portfolio";
+import { goalPlan } from "./finance";
 export function Overview() {
   const { ledger, month, t, fmt, setPage, modal } = useFinance();
   const s = summary(ledger, month);
@@ -29,13 +31,31 @@ export function Overview() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 4);
   const goal = ledger.goals.find((g) => !g.archived);
-  const saved = goal
-    ? ledger.entries
-        .filter((e) => e.goalId === goal.id && e.type === "transfer")
-        .reduce((s, e) => s + e.amount, 0)
-    : 0;
+  const saved = goal ? goalPlan(goal, ledger).saved : 0;
   return (
     <div className="overview-layout">
+      <section className="panel dashboard-primary">
+        <div>
+          <span className="eyebrow">{t("This month")}</span>
+          <h2>{t("Available money")}</h2>
+          <div className="metric-value">
+            <Money value={s.available} fit />
+          </div>
+          <p>{t("After expenses and savings transfers")}</p>
+        </div>
+        <div className="primary-budget-status">
+          <span>{t("Remaining monthly budget")}</span>
+          <strong>{fmt(s.allocated - s.spent - s.saved)}</strong>
+          <Progress value={s.income > 0 ? (s.allocated / s.income) * 100 : 0} />
+          <small>
+            {t("Allocated")}: {fmt(s.allocated)} / {fmt(s.income)}
+          </small>
+          <button className="text-button" onClick={() => setPage("budget")}>
+            {t("Edit budget")}
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </section>
       <div className="overview-metrics">
         <div className="metric-block">
           <div className="metric-label">
@@ -50,7 +70,7 @@ export function Overview() {
             </button>
           </div>
           <div className="metric-value">
-            <Money value={s.income} />
+            <Money value={s.income} fit />
           </div>
           <button
             className="metric-caption text-button"
@@ -67,14 +87,12 @@ export function Overview() {
         <div className="metric-block">
           <div className="metric-label">
             <MoveUpRight size={17} />
-            {t("Available money")}
+            {t("Monthly spending")}
           </div>
           <div className="metric-value">
-            <Money value={s.available} />
+            <Money value={s.spent} fit />
           </div>
-          <span className="metric-caption">
-            {t("After expenses and savings transfers")}
-          </span>
+          <span className="metric-caption">{t("Expenses minus refunds")}</span>
         </div>
         <div className="metric-block savings-metric">
           <div className="metric-label">
@@ -83,7 +101,7 @@ export function Overview() {
             <span className="small-star">✧</span>
           </div>
           <div className="metric-value">
-            <Money value={s.totalSaved} />
+            <Money value={s.totalSaved} fit />
           </div>
           <span className="metric-caption">
             {t("Across all your goals")}
@@ -92,6 +110,9 @@ export function Overview() {
           <span className="savings-orbit orbit-one" />
           <span className="savings-orbit orbit-two" />
         </div>
+      </div>
+      <div className="dashboard-portfolio">
+        <PortfolioSummary compact />
       </div>
       <section className="panel allocation-panel">
         <SectionHeader

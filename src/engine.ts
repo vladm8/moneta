@@ -2,7 +2,13 @@ export const CURRENCIES = ["PLN", "EUR", "USD", "UAH", "GBP"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 export type Language = "pl" | "en" | "uk";
 export type Page =
-  "overview" | "budget" | "transactions" | "analytics" | "goals" | "settings";
+  | "overview"
+  | "budget"
+  | "transactions"
+  | "analytics"
+  | "goals"
+  | "portfolio"
+  | "settings";
 export type Category = {
   id: string;
   name: string;
@@ -13,13 +19,14 @@ export type Category = {
 };
 export type Entry = {
   id: string;
-  type: "income" | "expense" | "transfer";
+  type: "income" | "expense" | "transfer" | "refund" | "internal";
   amount: number;
   date: string;
   description: string;
   categoryId: string;
   goalId?: string;
   recurringId?: string;
+  sourceId?: string;
 };
 export type Goal = {
   id: string;
@@ -28,6 +35,25 @@ export type Goal = {
   date: string;
   archived: boolean;
   color: string;
+  initialSaved?: number;
+  description?: string;
+  icon?: string;
+  createdAt?: string;
+};
+export type Holding = {
+  id: string;
+  name: string;
+  type: "cash" | "savings" | "investment" | "other" | "liability";
+  currency: Currency;
+  amount: number;
+  updatedAt: string;
+};
+export type ExchangeRates = {
+  date: string;
+  fetchedAt: string;
+  table: string;
+  // PLN per currency unit, scaled by 100,000,000.
+  rates: Partial<Record<Currency, number>>;
 };
 export type Recurring = {
   id: string;
@@ -59,6 +85,8 @@ export type Data = {
   defaultPage: Page;
   onboarded: boolean;
   ledgers: Partial<Record<Currency, Ledger>>;
+  holdings?: Holding[];
+  exchangeRates?: ExchangeRates;
 };
 export const MAX_AMOUNT = 100_000_000_00;
 export const colors = [
@@ -85,7 +113,24 @@ export const icons = [
   "wallet",
   "gift",
 ];
-export const uid = () => crypto.randomUUID();
+export const uid = () => {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+
+  // LAN previews use HTTP, where browsers may only expose getRandomValues.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join("-");
+};
 export function today() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -157,7 +202,7 @@ export const initialData = (): Data => ({
   version: 1,
   name: "",
   language: "pl",
-  theme: "light",
+  theme: "dark",
   currency: "PLN",
   defaultPage: "overview",
   onboarded: false,
@@ -176,7 +221,7 @@ export function summary(
   const sum = (type: Entry["type"]) =>
     es.filter((e) => e.type === type).reduce((s, e) => s + e.amount, 0);
   const income = sum("income"),
-    spent = sum("expense"),
+    spent = sum("expense") - sum("refund"),
     saved = sum("transfer"),
     allocated = Object.values(plan).reduce((a, b) => a + b, 0);
   return {
@@ -186,15 +231,21 @@ export function summary(
     allocated,
     unallocated: income - allocated,
     available: income - spent - saved,
-    totalSaved: ledger.entries
-      .filter((e) => e.type === "transfer")
-      .reduce((s, e) => s + e.amount, 0),
+    totalSaved:
+      ledger.entries
+        .filter((e) => e.type === "transfer")
+        .reduce((s, e) => s + e.amount, 0) +
+      ledger.goals.reduce((s, g) => s + (g.initialSaved || 0), 0),
   };
 }
 export function categorySpent(l: Ledger, month: string, id: string) {
   return entriesFor(l, month)
-    .filter((e) => e.categoryId === id && e.type !== "income")
-    .reduce((s, e) => s + e.amount, 0);
+    .filter(
+      (e) =>
+        e.categoryId === id &&
+        ["expense", "refund", "transfer"].includes(e.type),
+    )
+    .reduce((s, e) => s + (e.type === "refund" ? -e.amount : e.amount), 0);
 }
 export function savePlan(
   l: Ledger,
@@ -251,6 +302,12 @@ export function removeCategory(l: Ledger, id: string) {
   };
 }
 export function recordEntry(l: Ledger, entry: Entry) {
+  if (
+    !["income", "expense", "transfer", "refund", "internal"].includes(
+      entry.type,
+    )
+  )
+    throw new Error("Invalid transaction type.");
   if (!entry.description.trim() || entry.description.length > 160)
     throw new Error("Enter a description.");
   if (
@@ -321,6 +378,7 @@ export function validateImport(input: unknown): Data {
       "transactions",
       "analytics",
       "goals",
+      "portfolio",
       "settings",
     ].includes(d.defaultPage) ||
     !isObject(d.ledgers)
@@ -389,7 +447,11 @@ export function validateImport(input: unknown): Data {
           g.target === 0 ||
           !(g.date === "" || validDate(g.date)) ||
           typeof g.archived !== "boolean" ||
-          !/^#[a-fA-F0-9]{6}$/.test(g.color),
+          !/^#[a-fA-F0-9]{6}$/.test(g.color) ||
+          (g.initialSaved !== undefined && !amount(g.initialSaved)) ||
+          (g.description !== undefined && !str(g.description, 500)) ||
+          (g.icon !== undefined && !icons.includes(g.icon)) ||
+          (g.createdAt !== undefined && !validDate(g.createdAt)),
       ) ||
       !unique(l.goals)
     )
@@ -399,14 +461,17 @@ export function validateImport(input: unknown): Data {
         (e) =>
           !isObject(e) ||
           !id(e.id) ||
-          !["income", "expense", "transfer"].includes(e.type) ||
+          !["income", "expense", "transfer", "refund", "internal"].includes(
+            e.type,
+          ) ||
           !amount(e.amount) ||
           !e.amount ||
           !validDate(e.date) ||
           !str(e.description) ||
           !cat(e.categoryId) ||
           (e.type === "transfer" && !l.goals.some((g) => g.id === e.goalId)) ||
-          (e.recurringId !== undefined && !id(e.recurringId)),
+          (e.recurringId !== undefined && !id(e.recurringId)) ||
+          (e.sourceId !== undefined && !str(e.sourceId, 160)),
       ) ||
       !unique(l.entries)
     )
@@ -443,6 +508,47 @@ export function validateImport(input: unknown): Data {
           !isObject(p) || !id(p.id) || !str(p.name) || !plan(p.allocations),
       ) ||
       !unique(l.presets)
+    )
+      return fail();
+  }
+  if (
+    d.holdings !== undefined &&
+    (!Array.isArray(d.holdings) ||
+      d.holdings.length > 1000 ||
+      d.holdings.some(
+        (h) =>
+          !isObject(h) ||
+          !id(h.id) ||
+          !str(h.name) ||
+          !h.name.trim() ||
+          !["cash", "savings", "investment", "other", "liability"].includes(
+            h.type,
+          ) ||
+          !CURRENCIES.includes(h.currency) ||
+          !amount(h.amount) ||
+          !str(h.updatedAt, 40) ||
+          isNaN(Date.parse(h.updatedAt)),
+      ) ||
+      !unique(d.holdings))
+  )
+    return fail();
+  if (d.exchangeRates !== undefined) {
+    const r = d.exchangeRates;
+    if (
+      !isObject(r) ||
+      !validDate(r.date) ||
+      !str(r.table, 80) ||
+      !str(r.fetchedAt, 40) ||
+      isNaN(Date.parse(r.fetchedAt)) ||
+      !isObject(r.rates) ||
+      r.rates.PLN !== 100000000 ||
+      Object.entries(r.rates).some(
+        ([c, n]) =>
+          !CURRENCIES.includes(c as Currency) ||
+          !Number.isSafeInteger(n) ||
+          n <= 0 ||
+          n > 1000000000000,
+      )
     )
       return fail();
   }

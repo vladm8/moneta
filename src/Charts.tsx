@@ -219,17 +219,20 @@ export function SpendingTrend() {
   const [day, setDay] = useState<number | null>(null);
   const [year, m] = month.split("-").map(Number);
   const days = new Date(year, m, 0).getDate();
-  const entries = entriesFor(ledger, month).filter((e) => e.type === "expense");
+  const entries = entriesFor(ledger, month).filter(
+    (e) => e.type === "expense" || e.type === "refund",
+  );
   let total = 0;
   const points = Array.from({ length: days }, (_, i) => {
     total += entries
       .filter((e) => Number(e.date.slice(8)) === i + 1)
-      .reduce((s, e) => s + e.amount, 0);
+      .reduce((s, e) => s + (e.type === "refund" ? -e.amount : e.amount), 0);
     return total;
   });
   const max = Math.max(10000, ...points) * 1.15;
   const x = (i: number) => 38 + (i / (days - 1)) * 640;
-  const y = (v: number) => 200 - (v / max) * 170;
+  const min = Math.min(0, ...points);
+  const y = (v: number) => 200 - ((v - min) / (max - min)) * 170;
   const path = points
     .map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`)
     .join(" ");
@@ -266,7 +269,10 @@ export function SpendingTrend() {
             </text>
           </g>
         ))}
-        <path d={`${path} L678,200 L38,200 Z`} fill="url(#trend-fill)" />
+        <path
+          d={`${path} L678,${y(0)} L38,${y(0)} Z`}
+          fill="url(#trend-fill)"
+        />
         <path
           d={path}
           fill="none"

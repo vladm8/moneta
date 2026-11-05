@@ -37,16 +37,19 @@ import {
   type Category,
 } from "./engine";
 import { Donut } from "./Charts";
+import { ALLOCATION_STEP, sliderAmount, exactAllocation } from "./finance";
 function AllocationRow({
   category,
   amount,
   income,
+  limit,
   onChange,
   onInvalid,
 }: {
   category: Category;
   amount: number;
   income: number;
+  limit: number;
   onChange: (n: number) => void;
   onInvalid: (v: boolean) => void;
 }) {
@@ -128,19 +131,24 @@ function AllocationRow({
           type="range"
           aria-label={category.name + " " + t("Allocation")}
           min="0"
-          max={Math.max(income, amount, 100)}
-          step="1"
-          value={amount}
+          max={Math.max(
+            ALLOCATION_STEP,
+            Math.floor(limit / ALLOCATION_STEP) * ALLOCATION_STEP,
+          )}
+          step={ALLOCATION_STEP}
+          disabled={limit < ALLOCATION_STEP}
+          value={sliderAmount(amount, limit)}
+          aria-valuetext={fmt(amount)}
           style={
             {
               "--category": category.color,
-              "--fill": `${Math.min(100, (amount / Math.max(income, amount, 100)) * 100)}%`,
+              "--fill": `${Math.min(100, (sliderAmount(amount, limit) / Math.max(ALLOCATION_STEP, Math.floor(limit / ALLOCATION_STEP) * ALLOCATION_STEP)) * 100)}%`,
             } as React.CSSProperties
           }
           onChange={(e) => {
             setError(false);
             onInvalid(false);
-            onChange(Number(e.target.value));
+            onChange(sliderAmount(Number(e.target.value), limit));
           }}
         />
         <div className="allocation-number">
@@ -174,7 +182,7 @@ function AllocationRow({
                     : percentAmount(income, e.target.value);
                 setError(false);
                 onInvalid(false);
-                onChange(n);
+                onChange(exactAllocation(n, limit));
               } catch {
                 setError(true);
                 onInvalid(true);
@@ -207,7 +215,13 @@ function AllocationRow({
               : ""}
         </span>
       </div>
-      {error && <ErrorText error="Enter a valid positive amount." />}
+      {error && (
+        <ErrorText error="Enter a valid amount within the available allocation limit." />
+      )}
+      <small className="field-help">
+        {t("Allocation limit")}: {fmt(limit)} · {t("Slider step")}:{" "}
+        {fmt(ALLOCATION_STEP)}
+      </small>
     </div>
   );
 }
@@ -377,6 +391,7 @@ export function Budget() {
                 category={c}
                 amount={plan[c.id] || 0}
                 income={s.income}
+                limit={Math.max(0, s.unallocated + (plan[c.id] || 0))}
                 onChange={(n) => set(c.id, n)}
                 onInvalid={(v) =>
                   setInvalid((old) => {

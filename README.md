@@ -37,7 +37,18 @@ Amounts are safe integer minor units. Input supports a dot or comma decimal sepa
 
 Allocations are plans, never transactions. Savings transfers reduce available monthly cash and increase goal savings without counting as expenses. Category progress includes expenses and transfers assigned to that category. Monthly available cash does not automatically carry forward. Expenses may exceed income because actual activity must remain recordable; new savings transfers cannot exceed available money. Budget plans cannot be saved above income. Reducing income can make an already-saved plan overallocated; the budget editor shows this and requires adjustment.
 
-Goal savings are computed from their transfer history. Deleting a contributed goal archives it. Category deletion retains transactions as uncategorized and explicitly removes the category's historical allocations; use archive to retain full history.
+Goal savings are the opening saved amount plus their contribution history. Opening savings are not recorded as new income. Deleting a contributed goal archives it. Category deletion retains transactions as uncategorized and explicitly removes the category's historical allocations; use archive to retain full history.
+
+Refunds reduce monthly/category spending; internal transfers affect neither income nor expenses. Available money is a monthly budget measure, not an account balance. The portfolio independently tracks manually declared holdings and debts, so budgets and goal transfers are never added to net worth. Update each declared balance in place instead of adding deposits as new holdings.
+
+## Financial planning, portfolio and import
+
+- Sliders snap to 5 units of the selected currency; exact manual decimal values remain supported. Both respect the remaining allocation limit.
+- Goals support a currency-specific ledger, opening savings, icon, description and deadline. Savings requirements use calendar-month fractions and round upward to a cent with BigInt arithmetic. Weekly suggestions use remaining calendar days. Completion projections use observed contributions from up to 90 days and require at least 7 days of history; opening savings and future-dated contributions are excluded from pace calculations. Due-today, overdue and completed goals have explicit states.
+- The Portfolio view uses the official HTTPS [NBP table A API](https://api.nbp.pl/) to convert PLN/EUR/USD/UAH/GBP holdings to the selected currency. Rates are cached in IndexedDB with publication and fetch timestamps. Integer-scaled rates and BigInt ratios produce half-up cent rounding. Missing rates produce an incomplete valuation, never a fabricated rate. Portfolio changes do not generate investment returns or historical performance.
+- CSV, JSON and local OCR import is available from Transactions. See [IMPORT.md](IMPORT.md), the JSON schema and downloadable example in `public/examples/`. Every import requires editable preview and explicit confirmation. OCR rows additionally require individual review.
+- Existing version-1 backups remain readable. Holdings, rate cache and goal metadata are optional extensions; legacy records are not rewritten or reclassified. `refund` and `internal` are new entry types. Backups with these extensions require this or a newer MONETA version.
+- `finance.ts`, `Portfolio.tsx`, `GoalPlanner.tsx`, `transactionImport.ts`, `ImportWizard.tsx`, `finance.css` and `featureStrings.ts` extend the existing state and UI patterns. `finance.test.ts` covers financial rules and compatibility.
 
 ## Architecture
 
@@ -54,7 +65,7 @@ Goal savings are computed from their transfer history. Deleting a contributed go
 
 ## Boundaries
 
-This release is a single-browser app, with no cross-device synchronization, bank integration, currency exchange, interest projections, savings withdrawals, or unattended recurring charges. Export backups regularly. Clearing browser storage removes local data. Multiple tabs do not merge concurrent edits. Demo changes are discarded when leaving demo. Draft allocations use browser localStorage; committed records use IndexedDB. A hosted access gate, when present, belongs to the hosting provider rather than MONETA's account system.
+This release is a single-browser app, with no cross-device synchronization, bank integration, actual currency exchange, interest projections, savings withdrawals, or unattended recurring charges. NBP conversion is a reference valuation, not a bank execution quote. Export backups regularly. Clearing browser storage removes local data. Multiple tabs do not merge concurrent edits. Demo changes are discarded when leaving demo. Draft allocations use browser localStorage; committed records use IndexedDB. A hosted access gate, when present, belongs to the hosting provider rather than MONETA's account system.
 
 ## Verification
 

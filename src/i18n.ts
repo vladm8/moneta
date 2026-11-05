@@ -1,4 +1,5 @@
 import type { Language } from "./engine";
+import { featureStrings } from "./featureStrings";
 const strings: Record<string, [string, string]> = {
   "Maximum 100 categories.": [
     "Maksymalnie 100 kategorii.",
@@ -488,4 +489,6 @@ const strings: Record<string, [string, string]> = {
   ],
 };
 export const translate = (language: Language, key: string) =>
-  language === "en" ? key : strings[key]?.[language === "pl" ? 0 : 1] || key;
+  language === "en"
+    ? key
+    : (featureStrings[key] || strings[key])?.[language === "pl" ? 0 : 1] || key;

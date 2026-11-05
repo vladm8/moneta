@@ -372,13 +372,6 @@ strong {
   color: var(--green);
   font-weight: 600;
 }
-.nav-dot {
-  height: 5px;
-  width: 5px;
-  border-radius: 50%;
-  background: var(--green);
-  margin-left: auto;
-}
 .nav-item.settings-nav {
   margin-top: 26px;
 }

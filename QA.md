@@ -1,6 +1,24 @@
 # MONETA validation
 
-Validated on 3 November 2026.
+Latest validation: 5 November 2026. Earlier checks are retained below with their original scope.
+
+## Entrance animations — 5 November 2026
+
+- Removed active-tab dots from the sidebar; selected-tab surface, icon styling and `aria-current` remain.
+- Added a critical HTML logo loader before JavaScript/data loading, followed by short welcome and dashboard entrances. No artificial loading delay or blocking overlay is added after content is ready.
+- Production build passed. In isolated Edge, delayed the JavaScript response to verify the initial loader, then verified welcome/dashboard animations, settled transforms, absence of navigation dots and no horizontal overflow at 390 px. Reduced-motion mode disables the entrances. No browser runtime errors were observed.
+
+## Financial features — 5 November 2026
+
+- 68 Vitest cases passed across the existing engine suite and `finance.test.ts`. New coverage includes five-unit slider steps and exact inputs, calendar-month fractions and expired goals, integer FX rounding, missing rates, net worth without adding goals/plans, CSV/JSON parsing, duplicate overrides, neutral internal transfers, refunds, legacy backups and IndexedDB round trips.
+- A 5,000-row import into a 10,000-entry ledger preserves existing records. Duplicate detection uses per-currency indexes and batched appends, avoiding a full ledger scan/copy per imported row. Reused entry IDs cannot overwrite existing records.
+- TypeScript and the optimized Vite build passed. OCR code is lazy-loaded; local worker/core/model assets are included in the production output.
+- In an isolated Edge/Chromium context seeded with synthetic demo records: changed a slider by keyboard in five-unit steps, saved an exact 2600.23 allocation, created a goal with 5000 opening savings, added a contribution and edited it, and added PLN/EUR assets and a liability.
+- Fetched a real NBP response: table `215/A/NBP/2026`, publication date 2026-11-04. Publication and fetch timestamps are displayed separately; no test exchange rates were used in browser screenshots.
+- Imported CSV income, expense, refund and internal-transfer rows through the editable preview and confirmation. Ran the actual local Tesseract worker on a synthetic transaction image, recognized two transactions, individually reviewed them and confirmed the import. Verified holdings, goals, contributions and imported entries after reloading.
+- Inspected desktop dark and mobile dark/light screenshots. Checked document overflow at 1440, 390 and 320 px across the new overview, portfolio and import views; goals were also checked at 390 px. Fixed missing card padding during visual review. No uncaught browser errors in these flows.
+- New artifacts `qa/finance-*` contain synthetic test data only. Full-page mobile screenshots include the fixed bottom navigation at its viewport position; scrolling makes underlying content accessible.
+- Format and privacy details are in `IMPORT.md`. OCR requires review and can need manual corrections for bank-specific layouts, omitted years/currencies or unclear images. A real iPhone/Safari check has not been performed.
 
 ## Visual redesign — 4 November 2026
 
@@ -40,8 +58,8 @@ Screenshots are in `qa/`. They contain explicitly labeled demo data, not persona
 
 ## Limits
 
-No real-device Safari/iOS test, screen-reader audit, penetration test or cross-device sync test was performed. Multi-tab concurrent editing is not supported. Recurring entries require explicit application. No bank connection, automatic currency conversion, savings withdrawal or overdraft budgeting mode is included. Browser storage is not a backup; JSON export is the backup mechanism.
+No real-device Safari/iOS test, screen-reader audit, penetration test or cross-device sync test was performed. Multi-tab concurrent editing is not supported. Recurring entries require explicit application. No bank connection, actual currency exchange, savings withdrawal or overdraft budgeting mode is included. NBP conversion estimates portfolio values only; imported historical transactions remain in their original currency ledgers. Browser storage is not a backup; JSON export is the backup mechanism.
 
 ## Publication status
 
-The production build is complete locally. Publication is pending explicit permission to send source code to the private Sites repository; automatic approval review blocked that network action. No successful source upload or live deployment has been confirmed.
+The source repository is https://github.com/vladm8/moneta. This update includes the financial features, mobile fixes, entrance animations and dark theme by default. The production build is verified locally; no live web deployment is claimed.
