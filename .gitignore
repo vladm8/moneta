@@ -3,3 +3,11 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .openai/*.local.*
+.env
+.env.*
+!.env.example
+.banking/
+*.pem
+*.key
+*.p12
+*.sqlite*

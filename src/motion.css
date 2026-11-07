@@ -1,0 +1,158 @@
+/* Moneta motion: one native, interruptible system; amounts and actions stay immediate. */
+:root {
+  --motion-quick: 150ms;
+  --motion-settle: 320ms;
+  --motion-ease: cubic-bezier(.22,.8,.25,1);
+  view-transition-name: none;
+}
+.page-content { view-transition-name: moneta-page; }
+.page-header > div:first-child { view-transition-name: moneta-heading; }
+::view-transition { pointer-events: none; }
+::view-transition-old(moneta-page) { animation: page-depart 160ms ease-in both; }
+::view-transition-new(moneta-page) { animation: page-arrive 320ms var(--motion-ease) both; }
+::view-transition-old(moneta-heading) { animation: page-depart 120ms ease-in both; }
+::view-transition-new(moneta-heading) { animation: page-arrive 280ms var(--motion-ease) both; }
+@keyframes page-depart { to { opacity: 0; transform: translateY(-5px); } }
+@keyframes page-arrive { from { opacity: 0; transform: translateY(9px); } }
+
+/* One moving material underneath the navigation, rather than flashing active pills. */
+.sidebar nav { position: relative; isolation: isolate; }
+.mobile-bottom-nav { isolation: isolate; }
+.trend-ranges { position: relative; isolation: isolate; }
+.trend-ranges > button { position: relative; z-index: 1; }
+.trend-ranges > button.active { background: transparent; box-shadow: none; }
+.trend-ranges > .nav-glider { border-radius: 12px; }
+.nav-glider {
+  position: absolute; top: 0; left: 0; z-index: 0;
+  pointer-events: none; border-radius: 16px;
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--green) 16%, transparent);
+  box-shadow: inset 0 1px 0 var(--highlight), 0 4px 15px #00000009;
+}
+.sidebar .nav-item, .mobile-bottom-nav > button { position: relative; z-index: 1; }
+.sidebar .nav-item.active, .mobile-bottom-nav > button.active {
+  background: transparent; box-shadow: none; border-color: transparent;
+}
+.sidebar .nav-item svg { animation: none; transition: none; transform: none; }
+.sidebar .nav-item:hover svg { transform: none; }
+.mobile-bottom-nav button svg { transition: color 180ms; }
+.nav-item.active svg, .mobile-bottom-nav .active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--green) 20%, transparent)); }
+
+/* Short card choreography. Delay is capped and never applied to whole long tables. */
+.page-content:not([data-page="banks"]):not([data-page="overview"]) > * > :is(.panel, .goal-card, .metric-block) {
+  animation: moneta-card-in 460ms var(--motion-ease) backwards;
+}
+.goals-grid > :nth-child(2) { animation-delay: 50ms; }
+.goals-grid > :nth-child(3) { animation-delay: 100ms; }
+.goals-grid > :nth-child(4) { animation-delay: 150ms; }
+.page-content[data-page="overview"] { animation: none; }
+.overview-layout > :not(.overview-metrics), .overview-metrics > .metric-block {
+  animation: moneta-card-in 560ms var(--motion-ease) backwards;
+  animation-delay: var(--card-delay, 0ms);
+}
+.overview-metrics > :nth-child(1) { --card-delay: 70ms; }
+.overview-metrics > :nth-child(2) { --card-delay: 140ms; }
+.overview-metrics > :nth-child(3) { --card-delay: 210ms; }
+.overview-layout > :nth-child(3) { --card-delay: 280ms; }
+.overview-layout > :nth-child(4) { --card-delay: 350ms; }
+.overview-layout > :nth-child(5) { --card-delay: 420ms; }
+.overview-layout > :nth-child(6) { --card-delay: 490ms; }
+.overview-layout > :nth-child(7) { --card-delay: 560ms; }
+@keyframes moneta-card-in { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+.dashboard-primary, .metric-block, .goal-card, .allocation-panel, .add-transaction { position: relative; }
+:is(.dashboard-primary, .metric-block, .goal-card, .allocation-panel, .add-transaction)::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(340px circle at var(--light-x, 50%) var(--light-y, 0%), color-mix(in srgb, var(--green) 10%, transparent), transparent 72%);
+  opacity: 0; transition: opacity 260ms ease;
+}
+.motion-lit::after { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .metric-block:hover, .goal-card:hover { box-shadow: var(--panel-shadow), 0 12px 28px #00000012; }
+  .goal-art-disc { transition: transform 650ms var(--motion-ease); }
+  .goal-card:hover .goal-art-disc { transform: translate(5px, -3px) scale(1.04); }
+  .goal-card .goal-art .category-icon { transition: transform 450ms var(--motion-ease); }
+  .goal-card:hover .goal-art .category-icon { transform: translateY(-3px) rotate(-4deg); }
+}
+
+.button, .icon-button, .tiny-button, .text-button {
+  transition: transform var(--motion-quick) var(--motion-ease), background 180ms, border-color 180ms, box-shadow 180ms;
+}
+.button:active:not(:disabled) { transform: translateY(1px) scale(.975); }
+.icon-button:active:not(:disabled), .tiny-button:active:not(:disabled) { transform: scale(.9); }
+.button > svg, .text-button > svg { transition: transform 230ms var(--motion-ease); }
+.text-button:hover > svg:last-child { transform: translateX(2px); }
+.add-transaction:hover > svg { transform: rotate(90deg); }
+.button:focus-visible { box-shadow: 0 0 0 5px color-mix(in srgb, var(--green) 14%, transparent); }
+input:not([type="range"]), select, textarea { transition: border-color 180ms, box-shadow 180ms, background-color 180ms; }
+input[type="range"] { transition: filter 150ms; }
+input[type="range"]:focus-visible { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--green) 30%, transparent)); }
+input[type="range"]::-webkit-slider-thumb { transition: box-shadow 180ms, transform 180ms; }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"]::-moz-range-thumb { transition: box-shadow 180ms, transform 180ms; }
+input[type="range"]:active::-moz-range-thumb { transform: scale(1.12); }
+input[type="checkbox"] { transition: transform 160ms; }
+input[type="checkbox"]:active { transform: scale(.9); }
+.error { animation: validation-arrive 230ms var(--motion-ease); }
+@keyframes validation-arrive { from { opacity: .3; transform: translateY(-3px); } }
+.segmented button { transition: background 220ms, box-shadow 220ms, color 150ms; }
+.number { display: inline-block; font-variant-numeric: tabular-nums; }
+
+/* Modal business actions finish first; only an inert visual remains during dismissal. */
+.modal-backdrop { animation: entrance-fade 200ms ease-out both; }
+.modal { animation: modal-arrive 350ms var(--motion-ease) both; transform-origin: 50% 40%; }
+.modal-backdrop.is-closing { animation: modal-backdrop-out 180ms ease both; pointer-events: none; }
+.modal-backdrop.is-closing .modal { animation: modal-depart 180ms ease both; }
+@keyframes modal-arrive { from { opacity: 0; transform: translateY(14px) scale(.975); } }
+@keyframes modal-depart { to { opacity: 0; transform: translateY(8px) scale(.985); } }
+@keyframes modal-backdrop-out { to { opacity: 0; } }
+
+/* Draw the real curve once per range, never in response to pointer exploration. */
+.trend-line-reveal { stroke-dasharray: 1; stroke-dashoffset: 0; animation: chart-ink 700ms var(--motion-ease) both; }
+.trend-area-reveal { animation: chart-wash 600ms ease-out both; }
+@keyframes chart-ink { from { stroke-dashoffset: 1; } }
+@keyframes chart-wash { from { opacity: 0; } }
+.trend-cursor { animation: entrance-fade 120ms ease-out; }
+.trend-cursor-dot { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--green) 45%, transparent)); }
+.donut-segment { animation: none; transition: opacity 180ms, filter 180ms; }
+.donut-segment:hover, .donut-segment:focus-visible { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--green) 16%, transparent)); }
+.chart-legend .dot { transition: transform 230ms var(--motion-ease); }
+.chart-legend .highlighted .dot { transform: scale(1.3); }
+.chart-legend button { transition: background 200ms, color 200ms; }
+.progress { position: relative; }
+.progress > span { transition: width 420ms var(--motion-ease), background-color 220ms; }
+.progress.goal-milestone { overflow: visible; }
+.goal-milestone::after {
+  content: ""; position: absolute; inset: -4px; border: 1px solid var(--green); border-radius: inherit;
+  pointer-events: none; animation: goal-ripple 950ms var(--motion-ease) both;
+}
+.milestone-spark {
+  position: absolute; right: -6px; top: -8px; width: 22px; height: 22px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--green); color: var(--bg); box-shadow: 0 0 18px color-mix(in srgb, var(--green) 40%, transparent);
+  animation: goal-seal 1000ms var(--motion-ease) both;
+}
+@keyframes goal-ripple { from { opacity: .8; transform: scaleY(1); } to { opacity: 0; transform: scaleY(4); } }
+@keyframes goal-seal { 0% { opacity: 0; transform: scale(.4) rotate(-30deg); } 25%, 75% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(.85); } }
+.notification-success .notification-icon { animation: success-seal 480ms var(--motion-ease); }
+.notification-success .notification-icon svg { stroke-dasharray: 40; animation: success-check 450ms ease-out; }
+.notification-error .notification-icon { color: var(--negative); }
+@keyframes success-seal { from { transform: scale(.65) rotate(-12deg); opacity: .3; } }
+@keyframes success-check { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+.empty-symbol { animation: empty-seed 600ms var(--motion-ease) both; }
+@keyframes empty-seed { from { opacity: 0; transform: scale(.8) rotate(-8deg); } }
+.bank-suggestions { animation: suggestions-arrive 180ms var(--motion-ease); transform-origin: top; }
+@keyframes suggestions-arrive { from { opacity: 0; transform: translateY(-3px) scaleY(.98); } }
+
+@media (max-width: 650px) {
+  .page-content:not([data-page="banks"]):not([data-page="overview"]) > * > :is(.panel, .goal-card, .metric-block) { animation-duration: 320ms; animation-delay: 0ms; }
+  .overview-layout > :not(.overview-metrics), .overview-metrics > .metric-block { animation-duration: 420ms; }
+  .modal { animation-duration: 240ms; }
+  .trend-line-reveal { animation-duration: 450ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .motion-lit::after { opacity: 0; }
+  .button:hover, .button:active, .icon-button:active, .tiny-button:active, .nav-item:hover svg,
+  .goal-card:hover .goal-art-disc, .goal-card:hover .goal-art .category-icon { transform: none; }
+}

@@ -22,6 +22,10 @@ export type ImportRow = {
   include: boolean;
   allowDuplicate: boolean;
   reviewed: boolean;
+  sourcePage?: number;
+  sourceDirection?: "in" | "out";
+  sourceText?: string;
+  notes?: string[];
 };
 export const importFields = [
   "date",
@@ -344,6 +348,8 @@ export function duplicateIndex(ledger: Ledger) {
   };
 }
 export function commitImport(data: Data, rows: ImportRow[]) {
+  if (rows.filter((r) => r.include).length > 5000)
+    throw new Error("Import between 1 and 5000 transactions.");
   if (!rows.some((r) => r.include))
     throw new Error("Select transactions to import.");
   const next = { ...data, ledgers: { ...data.ledgers } };
@@ -356,8 +362,6 @@ export function commitImport(data: Data, rows: ImportRow[]) {
     }
   >();
   for (const row of rows.filter((r) => r.include)) {
-    if (!row.reviewed)
-      throw new Error("Review each extracted row before importing.");
     const e = rowEntry(row);
     const currency = row.currency as Currency;
     let batch = pending.get(currency);
@@ -388,7 +392,7 @@ export function commitImport(data: Data, rows: ImportRow[]) {
   }
   return next;
 }
-// OCR is a suggestion, never a confirmed transaction. Every row requires review.
+// OCR rows remain suggestions; the import UI requires one final confirmation.
 export function ocrRows(text: string, data: Data): ImportRow[] {
   let date = "",
     previous = "";

@@ -9,6 +9,8 @@ import "./styles.css";
 import "./fintech.css";
 import "./finance.css";
 import "./entrance.css";
+import "./liquid-glass.css";
+import "./motion.css";
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

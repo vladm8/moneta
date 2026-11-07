@@ -266,7 +266,7 @@ describe("reviewable transaction import", () => {
     expect(() => parseCSV("a,b\n1,2,3")).toThrow();
     expect(() => jsonRows('{"transactions":[]}', data())).toThrow();
   });
-  it("requires review and preserves all ledgers with atomic validation", () => {
+  it("preserves all ledgers with atomic validation without per-row confirmation", () => {
     const d = data();
     const r = {
       ...newImportRow("EUR"),
@@ -275,7 +275,7 @@ describe("reviewable transaction import", () => {
       description: "Salary",
       type: "income",
     };
-    expect(() => commitImport(d, [r])).toThrow("Review");
+    expect(commitImport(d, [r]).ledgers.EUR!.entries).toHaveLength(1);
     const next = commitImport(d, [{ ...r, reviewed: true }]);
     expect(next.ledgers.EUR!.entries[0].amount).toBe(10025);
     expect(d.ledgers.EUR).toBeUndefined();

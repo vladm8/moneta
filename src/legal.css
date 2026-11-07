@@ -1,0 +1,29 @@
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/600.css";
+@import "./styles.css";
+@import "./fintech.css";
+
+.legal-page {
+  color: var(--text);
+  background: radial-gradient(ellipse at top right, #222b484d, transparent 60%), var(--bg);
+  min-height: 100vh;
+  line-height: 1.75;
+}
+.legal-shell { width: min(880px, 100%); margin: auto; padding: 32px 24px; }
+.legal-header, .legal-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+.legal-header { margin-bottom: 32px; }
+.legal-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 600; letter-spacing: -1px; }
+.legal-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--text); color: var(--bg); font: bold italic 36px/1 Georgia, serif; padding-right: 4px; }
+.legal-brand b { color: var(--green); }
+.legal-page nav { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
+.legal-page a:not(.legal-brand) { color: var(--green); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.legal-page [aria-current="page"] { color: var(--text) !important; }
+.legal-document { padding: clamp(24px, 5vw, 48px); border: 1px solid var(--border); border-radius: 24px; background: var(--glass-primary); box-shadow: var(--panel-shadow); }
+.legal-document h1 { font-size: clamp(30px, 6vw, 42px); line-height: 1.2; letter-spacing: -1px; margin: 0 0 12px; }
+.legal-document h2 { font-size: 19px; line-height: 1.4; margin: 30px 0 10px; }
+.legal-document p { margin: 0 0 14px; }
+.legal-document ul { padding-left: 22px; }
+.legal-document li { margin-bottom: 8px; }
+.legal-meta, .legal-footer { color: var(--muted); font-size: 13px; }
+.legal-footer { margin-top: 26px; }
+@media print { .legal-page { background: white; color: black; } .legal-document { box-shadow: none; background: white; border: 0; } .legal-header, .legal-footer { display: none; } }

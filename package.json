@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "banking:setup": "node --env-file-if-exists=.env server/setup.mjs",
+    "banking:server": "node --env-file-if-exists=.env server/index.mjs",
+    "test:banking": "node --test server/*.spec.node.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "test": "vitest run",
@@ -12,6 +15,7 @@
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",
     "lucide-react": "^0.468.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tesseract.js": "^6.0.1"

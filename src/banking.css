@@ -1,0 +1,220 @@
+.banking-page .section-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.banking-page p {
+  line-height: 1.65;
+}
+.bank-login {
+  display: grid;
+  gap: 18px;
+  max-width: 520px;
+  margin-top: 24px;
+}
+.banking-page label:not(.bank-check) {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+}
+.bank-discovery {
+  display: grid;
+  grid-template-columns: 180px minmax(140px, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+.bank-discovery > label {
+  margin: 0;
+}
+.bank-discovery > label input,
+.bank-discovery > label select {
+  margin-top: 0;
+}
+.bank-discovery > .button,
+.bank-discovery input,
+.bank-discovery select {
+  height: 48px;
+  min-height: 48px;
+}
+.bank-autocomplete {
+  position: relative;
+  min-width: 0;
+}
+.bank-autocomplete > label {
+  margin: 0 0 9px;
+}
+.bank-search-input {
+  position: relative;
+}
+.bank-search-input > svg {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.bank-search-input input {
+  padding-left: 42px;
+  padding-right: 44px;
+}
+.bank-search-input > button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  display: grid;
+  place-items: center;
+}
+.bank-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 6px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px #0004;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.bank-suggestions button {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.bank-suggestions button span { flex: 1; overflow-wrap: anywhere; }
+.bank-suggestions button:hover,
+.bank-suggestions button.active { background: var(--glass-interactive); }
+.bank-suggestions p { padding: 10px 12px; margin: 0; }
+.bank-available { margin-top: 18px; }
+.bank-available h3 { margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+.bank-search-help { margin-top: 12px; color: var(--muted); font-size: 13px; }
+.bank-environment {
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+.bank-institutions,
+.bank-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.bank-account {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 1fr);
+  gap: 20px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+}
+.bank-account small,
+.bank-transaction small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 6px;
+}
+.bank-goal-funding {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.bank-goal-funding p {
+  grid-column: 1/-1;
+  font-size: 13px;
+}
+.bank-goal-funding button {
+  justify-self: start;
+}
+.bank-balance {
+  font-size: 26px;
+  white-space: nowrap;
+}
+.bank-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.bank-check input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+.bank-transaction {
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
+  align-items: center;
+}
+.bank-transaction .bank-check {
+  margin: 0;
+  min-width: 0;
+}
+.bank-transaction strong {
+  overflow-wrap: anywhere;
+}
+.bank-transaction > p,
+.bank-transaction > small {
+  grid-column: 1/-1;
+}
+.bank-transaction > label:not(.bank-check) {
+  grid-column: 1/-1;
+  max-width: 360px;
+}
+.bank-import-actions {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+@media (max-width: 650px) {
+  .bank-discovery,
+  .bank-account {
+    grid-template-columns: 1fr;
+  }
+  .banking-page .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .bank-actions {
+    gap: 14px;
+  }
+  .bank-transaction {
+    grid-template-columns: 1fr;
+  }
+  .bank-transaction > strong {
+    padding-left: 32px;
+  }
+  .bank-balance {
+    font-size: 23px;
+  }
+  .banking-page .panel {
+    padding: 22px 18px;
+  }
+}

@@ -56,10 +56,76 @@ Tested the application in the integrated Chromium browser using an explicitly na
 
 Screenshots are in `qa/`. They contain explicitly labeled demo data, not personal financial records.
 
+## PDF import — 2026-11-05
+
+- Build and 70 automated tests passed, including visual-order reconstruction of PDF text and review gating.
+- Headless Edge: synthetic two-page text PDF produced two transactions with distinct dates and currencies; per-row and whole-import confirmation were required before saving.
+- A scanned PDF was rasterized and read by the actual local Tesseract worker. The amount, currency and description were editable in the existing import form.
+- Verified page selection, a 390 px mobile layout without horizontal overflow, rejection of a 21-page document and a damaged PDF, and no browser runtime errors in these flows.
+- Screenshots: `qa/pdf-import-desktop.png` and `qa/pdf-import-mobile.png`. These use synthetic data. Password-protected files have an explicit error path; real bank layouts and real-device Safari still require testing.
+
+## Chart interaction and import confirmation — 2026-11-05
+
+- Build and all 89 automated tests pass. Window bounds cover month edges and leap February; series tests cover refunds, empty ranges and exclusion of non-expense flows.
+- Headless Edge: pointer movement anywhere above/below the curve selects the nearest day without moving the chart. Checked keyboard arrows/Home, touch input, 7/14/21-day windows, previous/next windows and a populated synthetic range total.
+- Expanded/collapsed the chart, verified an active 420 ms layout animation and restored width; checked 390 px mobile layout without horizontal overflow. Reduced-motion preference skips expansion animations.
+- Imported a synthetic 25-row PDF into the preview: no individual PDF/OCR review checkboxes or bulk-review button, one final confirmation enables import; editing resets that final confirmation. Duplicate/validation rules remain active. Pagination displays Polish labels and is separated from rows by at least 24 px.
+- Synthetic screenshots: `qa/chart-expanded.png`, `qa/chart-mobile.png`. No runtime errors occurred in the verified flow. Earlier per-row-review observations below describe the previous import workflow and are superseded by this change.
+
+## Shared liquid glass and notifications — 2026-11-05
+
+- Rate, transaction-save and delete notifications use the same top-center portal on desktop and mobile, with animated entrance/dismissal, Close and optional Undo. Rate messages keep their shorter duration; Undo messages keep a longer duration. Hover/focus pauses automatic dismissal.
+- Checked actual UI flows with controlled NBP responses: automatic dismissal, manual close, deletion and restoring via Undo, repeat notifications, mobile centering and no horizontal overflow. Glass dialogs were visually inspected after opening animations in dark desktop and light mobile modes. Reduced-motion preference disables notification movement. No runtime errors occurred.
+- New shared material covers dialogs, mobile bottom navigation, month/metric selectors, segmented controls, chart range controls and the theme switch. Financial cards retain their existing presentation.
+- Synthetic screenshots: `qa/glass-notification.png`, `qa/glass-modal-dark.png`, `qa/glass-modal-light.png`, `qa/glass-mobile-dark.png`. The previous corner-only rate notice is superseded by this shared implementation.
+
+## Mobile spending chart — 2026-11-05
+
+- Chart geometry scales to 190–240 px tall on narrow containers; desktop retains 360 px. Mobile header/readout spacing is tighter, date labels are compact, and the range selector uses four equal touch targets with short day labels.
+- Edge mobile emulation at 320/390/430 px: card below 560 px tall, no horizontal overflow, labels fit one row, correct cumulative amounts and week length, tap selection and stable readout layout. Cancelled touches restore the previous selection. A native touch swipe across the plot scrolls the page and preserves the selected day.
+- Inspected dark and light screenshots after layout settled: `qa/trend-mobile-320.png`, `qa/trend-mobile-390.png`, `qa/trend-mobile-430.png`, `qa/trend-mobile-light.png`. Desktop keeps long labels and full height. No runtime errors in the verified flow; real-device Safari remains untested.
+
 ## Limits
 
-No real-device Safari/iOS test, screen-reader audit, penetration test or cross-device sync test was performed. Multi-tab concurrent editing is not supported. Recurring entries require explicit application. No bank connection, actual currency exchange, savings withdrawal or overdraft budgeting mode is included. NBP conversion estimates portfolio values only; imported historical transactions remain in their original currency ledgers. Browser storage is not a backup; JSON export is the backup mechanism.
+### Recognition improvements — 2026-11-05
+
+- 86 tests cover positioned Revolut debit/credit/balance columns, pending rows, empty statements, wrapped descriptions, FX details, Polish/English/Ukrainian dates, inferred values, whole-unit amounts and OCR statuses.
+- Read-only verification against the user-provided eight-page statement: 57 completed rows, 2 pending rows excluded, no invalid date/type/description. Extracted incoming/outgoing sums match both non-empty currency summaries exactly. Private source text/images are not stored in this repository.
+- Actual Tesseract OCR in Edge read three synthetic rows correctly on both light and dark screenshots, preserving amounts, signs, dates and currencies.
+- UI checked: today is the default even from a historical month, manual import rows use today, bulk review works, editing a row revokes review, mobile width 390 px does not overflow, no runtime errors. Synthetic screenshot: `qa/import-review-mobile.png`.
+
+No real-device Safari/iOS test, screen-reader audit, penetration test or cross-device sync test was performed. Multi-tab concurrent editing is not supported. Recurring entries require explicit application. Actual currency exchange, savings withdrawal and overdraft budgeting are not included. Optional bank connections now require the separate backend described in BANKING.md; live provider authorization has not been tested without credentials. NBP conversion estimates portfolio values only; imported historical transactions remain in their original currency ledgers. Browser storage is not a backup; JSON export is the backup mechanism.
+
+### Enable Banking integration — 2026-11-06
+
+- `npm run test:banking`: 21 backend tests passed (Node test runner). Coverage includes signed JWT verification, password verification, AES-GCM persistence/isolation, owner/login/expiry/single-use state, full mocked authorization, cancellation, production opt-in, application configuration, pagination/cycles/rate limits/network errors, normalization, pending reconciliation, immutable references/fallback duplicates, balances, partial failure, inclusive date chunks, reconnection, expiry, revocation and HTTP authentication/CSRF/logout.
+- `npm test`: 99 tests passed, including 10 new frontend finance/persistence tests. Covered existing budget integration, category suggestions, preservation of manual edits/notes, deleted-entry tombstones, invalid and pending rows, user/environment binding, old manual/PDF duplicates, multiple currencies, internal transfers, asset replacement, negative balances and nonduplicated goal backing.
+- `npm run build`: TypeScript and production build passed. Existing lazy PDF bundle size advisory remains; no banking secrets are included in the browser build.
+- Headless Edge with synthetic banking API: desktop 1440 px and mobile 390/320 px. Verified institution discovery, booking-only import, confirmation, balance-to-holding linking, goal reservation, repeated synchronization, no horizontal overflow and no runtime errors. Screenshots: `qa/banking-1440.png`, `qa/banking-390.png`, `qa/banking-320.png`.
+- A synthetic `.pem` probe returned HTTP 403 from Vite, confirming its private-file deny configuration. Temporary probe and browser script removed after QA.
+- No real banking credentials were created or used, and no live bank connection or deployment is claimed. Sandbox/Restricted Production setup and exact callback addresses are documented in BANKING.md. The backend requires Node 24.14+; built-in SQLite currently emits an experimental-feature advisory.
 
 ## Publication status
+### Motion refinement — 2026-11-07
+
+- Donut geometry now follows interpolated shares instead of CSS path morphing; ring thickness stays fixed. Sidebar icons remain stationary. Overview cards enter individually with 70 ms stagger, including mobile, without an overlapping page snapshot animation.
+- Production build passed. Headless Edge verified repeated slider changes and both extremes, finite SVG paths without competing path transitions, sidebar hover, ordered card delays, 390 px layout and reduced motion. No runtime errors. Backend suite: 21 tests passed. Local visual captures: `qa/smooth-budget.png`, `qa/smooth-overview.png`.
+
+### Interface motion — 2026-11-07
+
+- Production build and all 99 Vitest tests passed. No new animation dependency or banking logic changes.
+- Headless Edge with isolated synthetic data verified exact amounts after an income save, modal Escape/return focus, chart keyboard interaction without replaying its line animation, goal completion feedback, transaction filtering, budget slider increments, mobile navigation indicator geometry, rapid navigation and reduced-motion behavior. No runtime errors or mobile horizontal overflow at 390 px.
+- Visually reviewed desktop chart and mobile overview captures. Screenshots: `qa/motion-overview.png`, `qa/motion-chart.png`, `qa/motion-mobile.png`. No real-device Safari or measured frame-rate claim; unsupported View Transitions use ordinary navigation.
+
+
+### Public legal pages — 2026-11-07
+
+- Built standalone `privacy.html` and `terms.html` with the existing Vite build. Anonymous HTTP 200 access verified in a fresh browser with JavaScript disabled; both pages contain no scripts, set no cookies, and link to each other correctly. Desktop 1440 px and mobile 390 px checks found no horizontal overflow or failed resource requests. Mobile screenshots: `qa/legal-privacy-390.png`, `qa/legal-terms-390.png`. Desktop screenshot capture was unavailable in the test browser; DOM/layout checks passed.
+- Documents describe local financial storage/imports, optional read-only server integration, Restricted Mode, retention/deletion and operator-supplied contact details. README explains static HTTPS publication and distinguishes document hosting from backend deployment. No live hosting deployment was performed.
+
+### Bank discovery and autocomplete — 2026-11-07
+
+- TypeScript and Vite production build passed. Headless Edge with a synthetic API verified automatic bank loading, matching suggestions, country changes, keyboard selection, persistent available-bank choices after a search with no matches, and shared glass error notifications. Checked desktop 1440 px and mobile 390 px with no horizontal overflow or runtime errors. Screenshots: `qa/bank-search-1440.png`, `qa/bank-search-390.png`.
+- A read-only check against the configured Enable Banking Sandbox returned Bank Millennium, Mock ASPSP and Genome for Poland; ING was absent. No authorization or account-data request was made. Bank names in the UI always come from the provider response.
 
 The source repository is https://github.com/vladm8/moneta. This update includes the financial features, mobile fixes, entrance animations and dark theme by default. The production build is verified locally; no live web deployment is claimed.

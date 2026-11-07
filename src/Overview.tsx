@@ -261,7 +261,7 @@ export function Overview() {
               <h3>{goal.name}</h3>
               <span>{Math.round((saved / goal.target) * 100)}%</span>
             </div>
-            <Progress value={(saved / goal.target) * 100} color={goal.color} />
+            <Progress value={(saved / goal.target) * 100} color={goal.color} celebrate />
             <div className="goal-preview-amount">
               <strong>{fmt(saved, false)}</strong>
               <span>/ {fmt(goal.target, false)}</span>

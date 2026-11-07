@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#030512" />
+  <meta name="description" content="How Moneta processes personal finance data and optional read-only bank connections." />
+  <title>Privacy Policy — Moneta</title>
+  <link rel="stylesheet" href="/src/legal.css" />
+</head>
+<body class="legal-page">
+<div class="legal-shell">
+  <header class="legal-header">
+    <a class="legal-brand" href="./index.html" aria-label="Moneta home"><span class="legal-mark" aria-hidden="true">m</span><span>moneta<b>.</b></span></a>
+    <nav aria-label="Legal pages"><a href="./privacy.html" aria-current="page">Privacy Policy</a><a href="./terms.html">Terms of Service</a></nav>
+  </header>
+  <main class="legal-document">
+    <h1>Privacy Policy</h1>
+    <p class="legal-meta">Last updated: 7 November 2026</p>
+    <p>Moneta is a personal, non-commercial finance project developed and operated by Vladyslav Matviiv, an individual, not a registered company. Contact: <a href="mailto:vladislavmatviyv@gmail.com">vladislavmatviyv@gmail.com</a>. This policy describes the current application and its optional read-only Enable Banking integration, including the intended use with the operator’s own linked accounts in Production Restricted Mode.</p>
+
+    <h2>1. Financial workspace and imports</h2>
+    <p>Moneta processes the name and preferences you enter, transactions, descriptions, notes, categories, budgets, savings goals, holdings and debts to provide budgeting, summaries and portfolio estimates. The financial workspace is stored in your browser using IndexedDB; draft budget allocations also use localStorage. It is not automatically synchronized across devices.</p>
+    <p>CSV, JSON, PDF and screenshot imports are read and processed in your browser, including text recognition. These documents are not uploaded by Moneta to a document-processing or AI service. Entries you approve are saved locally. Backups and exports contain financial information and are saved wherever you choose to download them.</p>
+
+    <h2>2. Optional read-only bank connections</h2>
+    <p>The integration requires a configured Moneta backend and separate Moneta banking login. It is not enabled merely by visiting a public page. Sandbox uses test data; Production Restricted Mode is intended for the operator’s own accounts linked in Enable Banking. Production access and bank availability depend on the provider and the bank.</p>
+    <p>When you choose to connect, you are redirected through Enable Banking to your bank to authenticate and authorize access. Moneta does not collect your bank login credentials. The integration requests account information only; it does not initiate payments or move money.</p>
+    <p>Depending on the bank and your authorization, the backend receives account details and identifiers, balances, transaction dates, amounts, currencies, counterparties, references and descriptions, plus consent/session status and expiry. It uses these to display accounts, synchronize history, detect possible duplicates and let you approve entries for your budget. Synchronization is manual, not continuous. Approved entries and explicitly linked balances are also stored in your browser.</p>
+    <p>Bank connection records and retrieved bank data are encrypted in the server’s SQLite database. Banking usernames, password hashes and session records are also stored on the server; authentication records are not all covered by the bank-record encryption. Passwords are hashed. An essential session cookie maintains the banking login and expires after eight hours. This login protects server-side bank connections, not the local financial workspace.</p>
+
+    <h2>3. External services and hosting</h2>
+    <p>Enable Banking and your bank process information needed to authorize and provide account access under their own notices. See <a href="https://auth.enablebanking.com/privacy" rel="noreferrer">Enable Banking’s privacy notice</a>. Moneta does not sell financial data or include advertising or analytics trackers. Fonts and media are served locally.</p>
+    <p>Portfolio exchange-rate updates contact the public NBP API to obtain reference rates; Moneta does not send your holdings or transaction history in those requests. The website host and any configured proxy necessarily receive technical connection information, such as IP addresses and requested resources. Their logs and retention depend on the hosting configuration.</p>
+
+    <h2>4. Retention, deletion and your choices</h2>
+    <p>Browser records remain until you delete them in Moneta or clear the site’s storage. Export a backup first if you wish to retain a copy. Downloaded files remain under your control. Server bank records remain until the connection is removed or the operator deletes them; there is no automatic account-wide deletion schedule.</p>
+    <p>Use “Disconnect” to request revocation of the provider session and removal of the connection’s server records. If provider revocation fails, Moneta offers a retry or explicit removal of server records; revoke the authorization in your bank as well. Previously imported transactions and saved portfolio balances remain locally until deleted separately. Clearing browser storage or logging out does not revoke bank access. Hosting/database backups, if maintained, require separate handling by the operator.</p>
+    <p>You can inspect, edit and export local financial records. For questions, access or correction requests, or deletion of operator-held data, contact <a href="mailto:vladislavmatviyv@gmail.com">vladislavmatviyv@gmail.com</a>. Please do not email bank passwords or private keys. If you run your own copy, you control its server storage and hosting.</p>
+
+    <h2>5. Changes</h2>
+    <p>This page will be updated when the application or its data handling changes. The date above identifies this version. These statements describe implemented behavior and planned restricted read-only use; they do not assert certification or regulatory approval.</p>
+  </main>
+  <footer class="legal-footer"><span>Moneta · Your money. Your peace of mind.</span><a href="./terms.html">Terms of Service</a></footer>
+</div>
+</body>
+</html>

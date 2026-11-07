@@ -150,11 +150,11 @@ export function PortfolioSummary({ compact = false }: { compact?: boolean }) {
                 {t("Assets")}
                 {p.missing ? ` · ${t("Partial valuation")}` : ""}
               </dt>
-              <dd>{fmt(p.assets)}</dd>
+              <dd><Money value={p.assets} /></dd>
             </div>
             <div>
               <dt>{t("Liabilities")}</dt>
-              <dd>{fmt(p.liabilities)}</dd>
+              <dd><Money value={p.liabilities} /></dd>
             </div>
           </dl>
         </>
@@ -216,17 +216,22 @@ function Breakdown({
   );
 }
 export function Portfolio() {
-  const { data, update, t, fmt, modal } = useFinance();
+  const { data, update, t, fmt, modal, toast } = useFinance();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const mounted = useRef(true);
   const p = portfolio(data.holdings || [], data.currency, data.exchangeRates);
-  async function refresh() {
+  async function refresh(showNotice = false) {
     setBusy(true);
     setError("");
     try {
       const rates = await fetchNBPRates();
-      if (mounted.current) update((d) => ({ ...d, exchangeRates: rates }));
+      if (mounted.current) {
+        update((d) => ({ ...d, exchangeRates: rates }));
+        if (showNotice) {
+          toast("Exchange rate updated", undefined, { duration: 2600 });
+        }
+      }
     } catch {
       if (mounted.current)
         setError(
@@ -281,7 +286,7 @@ export function Portfolio() {
           <button
             className="button secondary"
             disabled={busy}
-            onClick={refresh}
+            onClick={() => void refresh(true)}
           >
             <RefreshCw size={16} className={busy ? "spin" : ""} />
             {t(busy ? "Loading" : "Refresh rates")}
@@ -323,6 +328,13 @@ export function Portfolio() {
             <article key={h.id} className="holding-row">
               <div>
                 <h3>{h.name}</h3>
+                {Object.values(data.banking?.links || {}).some(
+                  (link) => link.holdingId === h.id,
+                ) && (
+                  <small>
+                    {t("Bank balance snapshot. Refresh in Connected banks.")}
+                  </small>
+                )}
                 <small>
                   {t(types[h.type])} · {t("Updated")}:{" "}
                   {new Date(h.updatedAt).toLocaleDateString(data.language)}

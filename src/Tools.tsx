@@ -45,7 +45,7 @@ import {
   type Language,
   type Page,
 } from "./engine";
-import { SpendingTrend } from "./Charts";
+import { SpendingTrendCard } from "./TrendChart";
 import { deleteData } from "./persistence";
 import { goalPlan } from "./finance";
 import { GoalPlanner } from "./GoalPlanner";
@@ -94,15 +94,15 @@ export function Transactions() {
       <div className="transaction-summary">
         <div>
           <span>{t("Income")}</span>
-          <strong className="positive">+{fmt(s.income)}</strong>
+          <strong className="positive">+<Money value={s.income} /></strong>
         </div>
         <div>
           <span>{t("Spent")}</span>
-          <strong>{fmt(s.spent)}</strong>
+          <strong><Money value={s.spent} /></strong>
         </div>
         <div>
           <span>{t("Saved this month")}</span>
-          <strong>{fmt(s.saved)}</strong>
+          <strong><Money value={s.saved} /></strong>
         </div>
       </div>
       <div className="transaction-filters">
@@ -283,13 +283,7 @@ export function Analytics() {
       </div>
       <div className="analytics-grid">
         <PortfolioSummary compact />
-        <section className="panel">
-          <SectionHeader
-            title="Monthly spending"
-            subtitle="Cumulative expenses by day"
-          />
-          <SpendingTrend />
-        </section>
+        <SpendingTrendCard />
         <section className="insights-panel">
           <span className="insight-icon">
             <Leaf size={23} />
@@ -578,10 +572,10 @@ export function Goals() {
                     </div>
                   </div>
                   <div className="goal-card-numbers">
-                    <strong>{fmt(saved, false)}</strong>
+                    <strong><Money value={saved} decimals={false} /></strong>
                     <span>/ {fmt(g.target, false)}</span>
                   </div>
-                  <Progress value={(saved / g.target) * 100} color={g.color} />
+                  <Progress value={(saved / g.target) * 100} color={g.color} celebrate />
                   <div className="goal-progress-label">
                     <span>
                       {saved >= g.target
@@ -827,6 +821,14 @@ export function Settings({ reset }: { reset: () => void }) {
           <p>
             {t(
               "Stored locally in this browser, without an account or trackers. Export a backup regularly; data is not synced across devices.",
+            )}
+            {data.banking && (
+              <span>
+                {" "}
+                {t(
+                  "Bank connections are stored on your server. Disconnect banks before deleting their data; clearing this browser does not revoke consent.",
+                )}
+              </span>
             )}
           </p>
         </div>

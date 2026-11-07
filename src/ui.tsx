@@ -6,7 +6,9 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
+import { motionAllowed, useListMotion, useValueMotion } from "./motion";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -70,7 +72,11 @@ export type FinanceContext = {
   fmt: (n: number, decimals?: boolean) => string;
   modal: (content: ReactNode) => void;
   close: () => void;
-  toast: (s: string, undo?: () => void) => void;
+  toast: (
+    s: string,
+    undo?: () => void,
+    options?: import("./Notification").ToastOptions,
+  ) => void;
   demo: boolean;
   setDemo: (v: boolean) => void;
   draft: Record<string, number> | null;
@@ -142,9 +148,9 @@ export function Money({
   fit?: boolean;
 }) {
   const { fmt } = useFinance();
-  const [shown, setShown] = useState(value);
-  const current = useRef(value);
   const textRef = useRef<HTMLSpanElement>(null);
+  const formatted = fmt(value, decimals);
+  useValueMotion(textRef, formatted);
   useLayoutEffect(() => {
     const text = textRef.current;
     const container = text?.parentElement;
@@ -161,38 +167,34 @@ export function Money({
     const observer = new ResizeObserver(resize);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [fit, shown, fmt, decimals]);
-  useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(value);
-      current.current = value;
-      return;
-    }
-    const from = current.current;
-    let frame = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / 350);
-      const n = Math.round(from + (value - from) * (1 - Math.pow(1 - p, 3)));
-      current.current = n;
-      setShown(n);
-      if (p < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [value]);
+  }, [fit, formatted]);
   return (
     <span className="number" ref={textRef}>
-      {fmt(shown, decimals)}
+      {formatted}
     </span>
   );
+}
+export function ModalHost({ children, onClose, returnFocus }: { children: ReactNode; onClose: () => void; returnFocus?: RefObject<HTMLElement | null> }) {
+  const [retained, setRetained] = useState(children);
+  useLayoutEffect(() => {
+    if (children) { setRetained(children); return; }
+    if (!motionAllowed()) { setRetained(null); return; }
+    const timer = setTimeout(() => setRetained(null), 180);
+    return () => clearTimeout(timer);
+  }, [children]);
+  const content = children || retained;
+  return content ? <Modal onClose={onClose} closing={!children} returnFocus={returnFocus}>{content}</Modal> : null;
 }
 export function Modal({
   children,
   onClose,
+  closing = false,
+  returnFocus,
 }: {
   children: ReactNode;
   onClose: () => void;
+  closing?: boolean;
+  returnFocus?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -225,13 +227,14 @@ export function Modal({
     return () => {
       document.body.style.overflow = overflow;
       document.removeEventListener("keydown", key);
-      active?.focus();
+      (returnFocus?.current || active)?.focus({ preventScroll: true });
     };
-  }, [onClose]);
+  }, [onClose, returnFocus]);
   const { t } = useFinance();
   return (
     <div
-      className="modal-backdrop"
+      className={`modal-backdrop ${closing ? "is-closing" : ""}`}
+      inert={closing}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -306,10 +309,10 @@ export function EntryForm({
   type?: Entry["type"];
   goalId?: string;
 }) {
-  const { ledger, month, t, fmt, updateLedger, close, toast } = useFinance();
+  const { ledger, t, fmt, updateLedger, close, toast } = useFinance();
   const [kind, setKind] = useState(entry?.type || type);
   const [error, setError] = useState("");
-  const initialDate = month === today().slice(0, 7) ? today() : month + "-01";
+  const [date, setDate] = useState(entry?.date || today());
   return (
     <>
       <span className="eyebrow">{t("Every movement, in one place")}</span>
@@ -334,6 +337,7 @@ export function EntryForm({
               type: kind,
               amount: parseMoney(String(f.get("amount"))),
               description: String(f.get("description")).trim(),
+              ...(f.get("note") ? { note: String(f.get("note")).trim() } : {}),
               date: String(f.get("date")),
               categoryId:
                 kind === "income" ? "" : String(f.get("category") || ""),
@@ -385,7 +389,8 @@ export function EntryForm({
         {kind === "transfer" && (
           <>
             <p className="field-help">
-              {t("Available")}: {fmt(summary(ledger, month).available)}
+              {t("Available")}:{" "}
+              {fmt(summary(ledger, date.slice(0, 7)).available)}
             </p>
             <label>
               {t("Savings goals")}
@@ -441,13 +446,24 @@ export function EntryForm({
             }
           />
         </label>
+        {(entry?.sourceId?.startsWith("bank:") || entry?.note) && (
+          <label>
+            {t("Note (optional)")}
+            <textarea
+              name="note"
+              maxLength={500}
+              defaultValue={entry?.note || ""}
+            />
+          </label>
+        )}
         <label>
           {t("Date")}
           <input
             name="date"
             type="date"
             required
-            defaultValue={entry?.date || initialDate}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
           />
         </label>
         <ErrorText error={error} />
@@ -696,6 +712,9 @@ export function GoalForm({ goal }: { goal?: Goal }) {
               color: goal?.color || colors[0],
               archived: goal?.archived || false,
               initialSaved: parseMoney(String(f.get("initialSaved") || "0")),
+              ...(goal?.bankSaved !== undefined
+                ? { bankSaved: goal.bankSaved }
+                : {}),
               description: String(f.get("description") || "").trim(),
               icon: String(f.get("icon") || "leaf"),
               createdAt: goal?.createdAt || today(),
@@ -890,6 +909,8 @@ export function TransactionList({
   compact?: boolean;
 }) {
   const { ledger, t, fmt, modal, updateLedger, toast, data } = useFinance();
+  const listRef = useRef<HTMLDivElement>(null);
+  useListMotion(listRef, entries.map(e => e.id).join("|"));
   if (!entries.length)
     return (
       <Empty
@@ -898,11 +919,11 @@ export function TransactionList({
       />
     );
   return (
-    <div className={`transaction-list ${compact ? "compact" : ""}`}>
+    <div ref={listRef} className={`transaction-list ${compact ? "compact" : ""}`}>
       {entries.map((e) => {
         const cat = ledger.categories.find((c) => c.id === e.categoryId);
         return (
-          <div className="transaction" key={e.id}>
+          <div className="transaction" key={e.id} data-motion-id={e.id}>
             <CategoryIcon
               category={
                 cat || {
@@ -981,10 +1002,24 @@ export function TransactionList({
     </div>
   );
 }
-export function Progress({ value, color }: { value: number; color?: string }) {
+export function Progress({ value, color, celebrate = false }: { value: number; color?: string; celebrate?: boolean }) {
+  const previous = useRef(value);
+  const [completed, setCompleted] = useState(false);
+  useEffect(() => {
+    const crossed = previous.current < 100 && value >= 100;
+    previous.current = value;
+    if (value < 100 || !celebrate) setCompleted(false);
+    if (!celebrate || !crossed || !motionAllowed()) return;
+    setCompleted(true);
+  }, [value, celebrate]);
+  useEffect(() => {
+    if (!completed) return;
+    const timer = setTimeout(() => setCompleted(false), 1100);
+    return () => clearTimeout(timer);
+  }, [completed]);
   return (
     <div
-      className="progress"
+      className={`progress ${completed ? "goal-milestone" : ""}`}
       role="progressbar"
       aria-valuenow={Math.min(100, Math.max(0, Math.round(value)))}
       aria-valuemin={0}
@@ -996,6 +1031,7 @@ export function Progress({ value, color }: { value: number; color?: string }) {
           background: color,
         }}
       />
+      {completed && <i className="milestone-spark" aria-hidden="true"><Check size={12} /></i>}
     </div>
   );
 }

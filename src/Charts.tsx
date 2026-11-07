@@ -1,8 +1,40 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { motionAllowed } from "./motion";
 import { useFinance, CategoryDetails, Money } from "./ui";
-import { summary, entriesFor } from "./engine";
+import { summary } from "./engine";
 
 const donutRadius = 124;
+// Interpolate shares, not SVG path commands: arc flags cannot be morphed safely.
+function useDonutShares(target: Record<string, number>) {
+  const signature = JSON.stringify(target);
+  const [shares, setShares] = useState(target);
+  const current = useRef(target);
+  useEffect(() => {
+    const next: Record<string, number> = JSON.parse(signature);
+    if (!motionAllowed()) { current.current = next; setShares(next); return; }
+    let frame = 0;
+    let previous = performance.now();
+    const tick = (now: number) => {
+      const blend = 1 - Math.exp(-Math.min(now - previous, 64) / 55);
+      previous = now;
+      let pending = false;
+      const value: Record<string, number> = {};
+      for (const id of new Set([...Object.keys(current.current), ...Object.keys(next)])) {
+        const from = current.current[id] || 0, to = next[id] || 0;
+        const difference = to - from;
+        value[id] = Math.abs(difference) < 0.0001 ? to : from + difference * blend;
+        pending ||= value[id] !== to;
+      }
+      if (!motionAllowed()) { current.current = next; setShares(next); return; }
+      current.current = value;
+      setShares(value);
+      if (pending) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [signature]);
+  return shares;
+}
 function segmentPath(start: number, end: number, width: number) {
   const inner = donutRadius - width / 2;
   const outer = donutRadius + width / 2;
@@ -44,24 +76,20 @@ export function Donut({
         name: c.name,
         color: c.color,
         amount: values[c.id] || 0,
-      }))
-      .filter((c) => c.amount > 0),
-    ...(stats.unallocated > 0
-      ? [
-          {
-            id: "unallocated",
-            name: t("Unallocated"),
-            color: "var(--unallocated)",
-            amount: stats.unallocated,
-          },
-        ]
-      : []),
+      })),
+    {
+      id: "unallocated",
+      name: t("Unallocated"),
+      color: "var(--unallocated)",
+      amount: Math.max(0, stats.unallocated),
+    },
   ];
   const total = Math.max(stats.income, stats.allocated);
+  const shares = useDonutShares(Object.fromEntries(segments.map(s => [s.id, total ? s.amount / total : 0])));
   const circ = 2 * Math.PI * donutRadius;
   let running = 0;
-  const arcs = segments.map((segment) => {
-    const length = total ? (segment.amount / total) * circ : 0;
+  const arcs = segments.filter(s => (shares[s.id] || 0) > 0).map((segment) => {
+    const length = (shares[segment.id] || 0) * circ;
     const gap = Math.min(7, length * 0.18);
     const start = (running + gap / 2) / donutRadius - Math.PI / 2;
     running += length;
@@ -74,7 +102,7 @@ export function Donut({
       path: segmentPath(
         start,
         start + (length - gap) / donutRadius,
-        hover === segment.id ? 34 : 28,
+        28,
       ),
     };
   });
@@ -187,7 +215,7 @@ export function Donut({
       </select>
       {!compact && (
         <div className="chart-legend">
-          {arcs.map((s) => (
+          {arcs.filter(s => s.amount > 0).map((s) => (
             <button
               key={s.id}
               className={hover === s.id ? "highlighted" : ""}
@@ -211,106 +239,6 @@ export function Donut({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-export function SpendingTrend() {
-  const { ledger, month, fmt, t } = useFinance();
-  const [day, setDay] = useState<number | null>(null);
-  const [year, m] = month.split("-").map(Number);
-  const days = new Date(year, m, 0).getDate();
-  const entries = entriesFor(ledger, month).filter(
-    (e) => e.type === "expense" || e.type === "refund",
-  );
-  let total = 0;
-  const points = Array.from({ length: days }, (_, i) => {
-    total += entries
-      .filter((e) => Number(e.date.slice(8)) === i + 1)
-      .reduce((s, e) => s + (e.type === "refund" ? -e.amount : e.amount), 0);
-    return total;
-  });
-  const max = Math.max(10000, ...points) * 1.15;
-  const x = (i: number) => 38 + (i / (days - 1)) * 640;
-  const min = Math.min(0, ...points);
-  const y = (v: number) => 200 - ((v - min) / (max - min)) * 170;
-  const path = points
-    .map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`)
-    .join(" ");
-  return (
-    <div className="trend-chart">
-      <div className="trend-tooltip">
-        {day !== null
-          ? `${t("Day")} ${day + 1} · ${fmt(points[day])}`
-          : fmt(total)}
-      </div>
-      <svg
-        viewBox="0 0 710 245"
-        role="img"
-        aria-label={t("Cumulative expenses by day")}
-      >
-        <defs>
-          <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--green)" stopOpacity=".24" />
-            <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0, 0.5, 1].map((r) => (
-          <g key={r}>
-            <line
-              x1="38"
-              y1={y(max * r)}
-              x2="680"
-              y2={y(max * r)}
-              stroke="var(--border)"
-              strokeDasharray="3 5"
-            />
-            <text x="0" y={y(max * r) - 7} fill="var(--muted)" fontSize="10">
-              {Math.round((max * r) / 100)}
-            </text>
-          </g>
-        ))}
-        <path
-          d={`${path} L678,${y(0)} L38,${y(0)} Z`}
-          fill="url(#trend-fill)"
-        />
-        <path
-          d={path}
-          fill="none"
-          stroke="var(--green)"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
-        {points.map((v, i) => (
-          <g key={i}>
-            <circle
-              cx={x(i)}
-              cy={y(v)}
-              r={day === i ? 5 : 10}
-              fill={day === i ? "var(--green)" : "transparent"}
-              stroke={day === i ? "var(--surface)" : "none"}
-              strokeWidth="3"
-              tabIndex={0}
-              aria-label={`${t("Day")} ${i + 1}: ${fmt(v)}`}
-              onFocus={() => setDay(i)}
-              onMouseEnter={() => setDay(i)}
-              onMouseLeave={() => setDay(null)}
-              onBlur={() => setDay(null)}
-              onClick={() => setDay(i)}
-            />
-            {(i === 0 || i === days - 1 || i % 7 === 0) && (
-              <text
-                x={x(i)}
-                y="230"
-                textAnchor="middle"
-                fill="var(--muted)"
-                fontSize="11"
-              >
-                {i + 1}
-              </text>
-            )}
-          </g>
-        ))}
-      </svg>
     </div>
   );
 }

@@ -47,12 +47,15 @@ import {
 } from "./engine";
 import { loadData, persistData } from "./persistence";
 import { translate } from "./i18n";
-import { Finance, Modal, EntryForm, ErrorText } from "./ui";
+import { Finance, ModalHost, EntryForm, ErrorText } from "./ui";
+import { NavGlider, navigateWithMotion, useInteractionLight } from "./motion";
 import { Overview } from "./Overview";
 import { Budget } from "./Budget";
 import { Transactions, Analytics, Goals, Settings } from "./Tools";
 import { AmbientBackground } from "./AmbientBackground";
 import { Portfolio } from "./Portfolio";
+import { ConnectedBanks } from "./ConnectedBanks";
+import { Notification, type ToastOptions } from "./Notification";
 const navigation = [
   ["overview", "Overview", LayoutDashboard],
   ["budget", "Budget", SlidersHorizontal],
@@ -60,9 +63,11 @@ const navigation = [
   ["analytics", "Analytics", ChartNoAxesCombined],
   ["goals", "Savings goals", Leaf],
   ["portfolio", "Portfolio", Wallet],
+  ["banks", "Connected banks", ShieldCheck],
   ["settings", "Settings", SettingsIcon],
 ] as const;
 const headers: Record<Page, [string, string]> = {
+  banks: ["Connected banks", "Your bank accounts, securely connected."],
   overview: ["Good to see you", "A little clarity. A lot more peace of mind."],
   budget: ["Plan with intention", "Move the sliders. Find your balance."],
   transactions: [
@@ -256,6 +261,7 @@ function Welcome({
   );
 }
 export default function App() {
+  useInteractionLight();
   const [account, setAccount] = useState<Data>(initialData);
   const [demoState, setDemoState] = useState<Data | null>(null);
   const data = demoState || account;
@@ -266,16 +272,25 @@ export default function App() {
   const [page, setPageState] = useState<Page>("overview");
   const [month, setMonthState] = useState(thisMonth);
   const [modalContent, setModalContent] = useState<ReactNode>(null);
+  const modalReturnFocus = useRef<HTMLElement | null>(null);
+  const openModal = useCallback((content: ReactNode) => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active?.closest(".modal")) modalReturnFocus.current = active;
+    setModalContent(content);
+  }, []);
   const [toast, setToast] = useState<{
+    id: number;
     message: string;
     undo?: () => void;
+    duration: number;
+    variant?: ToastOptions["variant"];
   } | null>(null);
   const [menu, setMenu] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Record<string, number>>>(
     {},
   );
   const saveQueue = useRef(Promise.resolve());
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const toastSequence = useRef(0);
   const t = (s: string) => translate(data.language, s);
   const ledger = getLedger(data);
   const draftKey = `${demo ? "demo" : "account"}:${data.currency}:${month}`;
@@ -287,7 +302,11 @@ export default function App() {
         if (!live) return;
         if (d) {
           setAccount(d);
-          setPageState(d.defaultPage);
+          setPageState(
+            new URLSearchParams(location.search).has("banking")
+              ? "banks"
+              : d.defaultPage,
+          );
         }
         try {
           const value = JSON.parse(
@@ -387,11 +406,18 @@ export default function App() {
       return changed ? next : previous;
     });
   }, [ready, demo, data.currency, ledger.categories]);
-  const notify = useCallback((message: string, undo?: () => void) => {
-    clearTimeout(toastTimer.current);
-    setToast({ message, undo });
-    toastTimer.current = setTimeout(() => setToast(null), undo ? 10000 : 5000);
-  }, []);
+  const notify = useCallback(
+    (message: string, undo?: () => void, options?: ToastOptions) => {
+      setToast({
+        id: ++toastSequence.current,
+        message,
+        undo,
+        duration: options?.duration ?? (undo ? 10000 : 5000),
+        variant: options?.variant,
+      });
+    },
+    [],
+  );
   const close = useCallback(() => setModalContent(null), []);
   const update = (fn: (d: Data) => Data) => {
     if (demo) setDemoState((d) => fn(d!));
@@ -417,9 +443,12 @@ export default function App() {
     if (/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) setMonthState(m);
   };
   const setPage = (p: Page) => {
-    setPageState(p);
-    setMenu(false);
-    window.scrollTo({ top: 0, behavior: "instant" });
+    if (p === page) { setMenu(false); return; }
+    navigateWithMotion(() => {
+      setPageState(p);
+      setMenu(false);
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, p !== "overview");
   };
   const setDemo = (v: boolean) => {
     setDemoState(v ? demoData(data.language) : null);
@@ -513,7 +542,7 @@ export default function App() {
     t,
     fmt: (n: number, decimals = true) =>
       money(n, data.currency, data.language, decimals),
-    modal: setModalContent,
+    modal: openModal,
     close,
     toast: notify,
     demo,
@@ -540,6 +569,7 @@ export default function App() {
           </a>
           <span className="nav-label">{t("YOUR SPACE")}</span>
           <nav aria-label={t("YOUR SPACE")}>
+            <NavGlider active={page} />
             {navigation.map(([key, label, Icon]) => (
               <button
                 key={key}
@@ -558,7 +588,13 @@ export default function App() {
             <div className="privacy-note">
               <ShieldCheck size={20} />
               <strong>{t("Local & private")}</strong>
-              <p>{t("Your data stays in this browser.")}</p>
+              <p>
+                {t(
+                  data.banking
+                    ? "Local finances. Encrypted bank connections on your server."
+                    : "Your data stays in this browser.",
+                )}
+              </p>
             </div>
             <button className="profile" onClick={() => setPage("settings")}>
               <span className="avatar">
@@ -680,7 +716,7 @@ export default function App() {
               </div>
               <button
                 className="button add-transaction"
-                onClick={() => setModalContent(<EntryForm />)}
+                onClick={() => openModal(<EntryForm />)}
               >
                 <Plus size={17} />
                 <span>{t("Add transaction")}</span>
@@ -700,6 +736,8 @@ export default function App() {
               <Goals />
             ) : page === "portfolio" ? (
               <Portfolio />
+            ) : page === "banks" ? (
+              <ConnectedBanks />
             ) : (
               <Settings reset={reset} />
             )}
@@ -710,11 +748,13 @@ export default function App() {
           </footer>
         </main>
         <nav className="mobile-bottom-nav">
+          <NavGlider active={page} />
           {navigation.slice(0, 5).map(([key, label, Icon]) => (
             <button
               key={key}
               aria-label={t(label)}
               className={page === key ? "active" : ""}
+              aria-current={page === key ? "page" : undefined}
               onClick={() => setPage(key)}
             >
               <Icon size={20} />
@@ -723,25 +763,18 @@ export default function App() {
           ))}
         </nav>
       </div>
-      {modalContent && <Modal onClose={close}>{modalContent}</Modal>}
+      <ModalHost onClose={close} returnFocus={modalReturnFocus}>{modalContent}</ModalHost>
       {toast && (
-        <div className="toast" role="status">
-          <Check size={17} />
-          <span>{t(toast.message)}</span>
-          {toast.undo && (
-            <button
-              onClick={() => {
-                toast.undo?.();
-                setToast(null);
-              }}
-            >
-              {t("Undo")}
-            </button>
-          )}
-          <button aria-label={t("Close")} onClick={() => setToast(null)}>
-            <X size={15} />
-          </button>
-        </div>
+        <Notification
+          key={toast.id}
+          message={t(toast.message)}
+          undo={toast.undo}
+          duration={toast.duration}
+          variant={toast.variant}
+          closeLabel={t("Close")}
+          undoLabel={t("Undo")}
+          onClose={() => setToast(null)}
+        />
       )}
     </Finance.Provider>
   );

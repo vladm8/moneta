@@ -1,4 +1,161 @@
 export const featureStrings: Record<string, [string, string]> = {
+  "Bank connections are stored on your server. Disconnect banks before deleting their data; clearing this browser does not revoke consent.":
+    [
+      "Połączenia bankowe są zapisane na Twoim serwerze. Odłącz banki przed usunięciem ich danych; wyczyszczenie przeglądarki nie odwołuje zgód.",
+      "Банківські підключення зберігаються на твоєму сервері. Відключи банки перед видаленням їхніх даних; очищення браузера не скасовує згоди.",
+    ],
+  "Bank balance snapshot. Refresh in Connected banks.": [
+    "Zapisane saldo bankowe. Odśwież w sekcji Połączone banki.",
+    "Збережений банківський баланс. Онови в розділі Підключені банки.",
+  ],
+  "Note (optional)": ["Notatka (opcjonalnie)", "Нотатка (необов’язково)"],
+  "Invalid note.": [
+    "Notatka może mieć maksymalnie 500 znaków.",
+    "Нотатка може містити до 500 символів.",
+  ],
+  "Local finances. Encrypted bank connections on your server.": [
+    "Finanse lokalnie. Szyfrowane połączenia bankowe na Twoim serwerze.",
+    "Фінанси локально. Зашифровані банківські підключення на твоєму сервері.",
+  ],
+  "Bank balance reserved for this goal": [
+    "Saldo bankowe zarezerwowane na cel",
+    "Банківський баланс, виділений на ціль",
+  ],
+  "Already included in progress, not added to your contributions.": [
+    "Uwzględnione w postępie, bez doliczania do wpłat.",
+    "Враховано в прогресі без додавання до внесків.",
+  ],
+  "Connected banks": ["Połączone banki", "Підключені банки"],
+  "Your bank accounts, securely connected.": [
+    "Twoje rachunki bankowe w jednym miejscu.",
+    "Твої банківські рахунки в одному місці.",
+  ],
+  "Cumulative spending": ["Wydatki narastająco", "Накопичені витрати"],
+  "7 days": ["7 dni", "7 днів"],
+  "14 days": ["14 dni", "14 днів"],
+  "21 days": ["21 dni", "21 день"],
+  "Touch or slide to check a day.": [
+    "Dotknij lub przesuń palcem, aby sprawdzić dzień.",
+    "Торкнися або проведи пальцем, щоб перевірити день.",
+  ],
+  "Exchange rate updated": ["Kurs zaktualizowany", "Курс оновлено"],
+  Previous: ["Poprzednia", "Попередня"],
+  Next: ["Następna", "Наступна"],
+  Month: ["Miesiąc", "Місяць"],
+  "1 week": ["1 tydzień", "1 тиждень"],
+  "2 weeks": ["2 tygodnie", "2 тижні"],
+  "3 weeks": ["3 tygodnie", "3 тижні"],
+  "Chart range": ["Zakres wykresu", "Діапазон графіка"],
+  "Previous range": ["Poprzedni zakres", "Попередній діапазон"],
+  "Next range": ["Następny zakres", "Наступний діапазон"],
+  "Expand chart": ["Powiększ wykres", "Збільшити графік"],
+  "Collapse chart": ["Zmniejsz wykres", "Зменшити графік"],
+  "Total in selected range": [
+    "Łącznie w wybranym zakresie",
+    "Разом за вибраний період",
+  ],
+  "That day": ["Tego dnia", "Цього дня"],
+  "Move across the chart, tap, or use the arrow keys to select a day.": [
+    "Wskaż dzień kursorem, dotknij wykresu lub użyj strzałek na klawiaturze.",
+    "Вибери день курсором, торкнися графіка або використовуй стрілки на клавіатурі.",
+  ],
+  "Drop a file here or paste a screenshot with Ctrl+V.": [
+    "Przeciągnij plik tutaj lub wklej screen skrótem Ctrl+V.",
+    "Перетягни файл сюди або встав скриншот через Ctrl+V.",
+  ],
+  "Year for dates without a year": [
+    "Rok dla dat bez roku",
+    "Рік для дат без року",
+  ],
+  "Currency for amounts without a currency": [
+    "Waluta dla kwot bez waluty",
+    "Валюта для сум без валюти",
+  ],
+  "These settings only fill missing values when you extract again. Dates present in the document are preserved.":
+    [
+      "Te ustawienia uzupełniają tylko brakujące wartości po kliknięciu „Odczytaj ponownie”. Daty z dokumentu zostają zachowane.",
+      "Ці налаштування заповнюють лише відсутні значення після повторного зчитування. Дати з документа зберігаються.",
+    ],
+  "Fit preview": ["Dopasuj podgląd", "Вмістити попередній перегляд"],
+  "Enlarge preview": ["Powiększ podgląd", "Збільшити попередній перегляд"],
+  "Show rows": ["Pokaż pozycje", "Показати рядки"],
+  "All rows": ["Wszystkie", "Усі"],
+  "Needs review": ["Do sprawdzenia", "До перевірки"],
+  Excluded: ["Wykluczone", "Виключені"],
+  "Exclude duplicates": ["Wyklucz duplikaty", "Виключити дублікати"],
+  "I checked the visible rows": [
+    "Sprawdziłem widoczne pozycje",
+    "Я перевірив видимі рядки",
+  ],
+  "Original row": ["Oryginalny wiersz", "Оригінальний рядок"],
+  "Compare with source": ["Porównaj z oryginałem", "Порівняти з оригіналом"],
+  "Pending transaction — excluded": [
+    "Transakcja oczekująca — wykluczona z importu",
+    "Транзакція в очікуванні — виключена з імпорту",
+  ],
+  "Uncompleted transaction — excluded": [
+    "Transakcja niezrealizowana — wykluczona z importu",
+    "Незавершена транзакція — виключена з імпорту",
+  ],
+  "Check whether this is a transfer between your own accounts": [
+    "Sprawdź, czy to przelew między własnymi kontami. W takim przypadku wybierz „Przelew wewnętrzny”.",
+    "Перевір, чи це переказ між власними рахунками. Якщо так, вибери «Внутрішній переказ».",
+  ],
+  "Column layout unavailable — check direction": [
+    "Brak układu kolumn — wybierz rodzaj transakcji",
+    "Немає структури колонок — вибери тип транзакції",
+  ],
+  "Year taken from import settings": [
+    "Rok uzupełniono z ustawień importu — sprawdź datę",
+    "Рік взято з налаштувань імпорту — перевір дату",
+  ],
+  "Currency taken from import settings": [
+    "Walutę uzupełniono z ustawień importu — sprawdź ją",
+    "Валюту взято з налаштувань імпорту — перевір її",
+  ],
+  "Several amounts found — check the transaction amount": [
+    "Rozpoznano kilka kwot — sprawdź kwotę transakcji",
+    "Розпізнано кілька сум — перевір суму транзакції",
+  ],
+  "Low OCR confidence — check against the image": [
+    "Niska pewność OCR — porównaj dane z obrazem",
+    "Низька впевненість OCR — порівняй дані із зображенням",
+  ],
+  "PDF: up to 20 pages. Text and scans are read locally. Check each row before importing.":
+    [
+      "PDF: do 20 stron. Tekst i skany są odczytywane lokalnie. Sprawdź każdy wiersz przed importem.",
+      "PDF: до 20 сторінок. Текст і скани зчитуються локально. Перевір кожен рядок перед імпортом.",
+    ],
+  "PDF pages and extracted text": [
+    "Strony PDF i rozpoznany tekst",
+    "Сторінки PDF і розпізнаний текст",
+  ],
+  "PDF page": ["Strona PDF", "Сторінка PDF"],
+  "I checked this row against the PDF": [
+    "Sprawdziłem ten wiersz z dokumentem PDF",
+    "Я перевірив цей рядок за документом PDF",
+  ],
+  "Use a PDF with at most 20 pages.": [
+    "Wybierz PDF zawierający maksymalnie 20 stron.",
+    "Вибери PDF, що містить не більше 20 сторінок.",
+  ],
+  "This PDF is password protected. Remove its password locally and try again.":
+    [
+      "Ten PDF jest zabezpieczony hasłem. Usuń hasło lokalnie i spróbuj ponownie.",
+      "Цей PDF захищений паролем. Видали пароль локально та спробуй ще раз.",
+    ],
+  "This PDF is damaged or invalid.": [
+    "Ten PDF jest uszkodzony lub nieprawidłowy.",
+    "Цей PDF пошкоджений або некоректний.",
+  ],
+  "Cannot read PDF page.": [
+    "Nie można odczytać strony PDF.",
+    "Не вдалося прочитати сторінку PDF.",
+  ],
+  "Choose CSV, JSON, PDF, PNG, JPEG or WebP.": [
+    "Wybierz CSV, JSON, PDF, PNG, JPEG lub WebP.",
+    "Вибери CSV, JSON, PDF, PNG, JPEG або WebP.",
+  ],
   "Download JSON example": [
     "Pobierz przykład JSON",
     "Завантажити приклад JSON",

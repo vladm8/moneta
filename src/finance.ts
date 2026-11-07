@@ -62,8 +62,10 @@ export function goalPlan(goal: Goal, ledger: Ledger, asOf = today()) {
   const contributions = ledger.entries.filter(
     (e) => e.type === "transfer" && e.goalId === goal.id && e.date <= asOf,
   );
-  const saved =
-    (goal.initialSaved || 0) + contributions.reduce((s, e) => s + e.amount, 0);
+  const saved = Math.max(
+    goal.bankSaved || 0,
+    (goal.initialSaved || 0) + contributions.reduce((s, e) => s + e.amount, 0),
+  );
   const remaining = Math.max(0, goal.target - saved);
   const days = goal.date
     ? Math.max(0, dayNumber(goal.date) - dayNumber(asOf))

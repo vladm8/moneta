@@ -8,6 +8,7 @@ export type Page =
   | "analytics"
   | "goals"
   | "portfolio"
+  | "banks"
   | "settings";
 export type Category = {
   id: string;
@@ -27,6 +28,7 @@ export type Entry = {
   goalId?: string;
   recurringId?: string;
   sourceId?: string;
+  note?: string;
 };
 export type Goal = {
   id: string;
@@ -36,6 +38,7 @@ export type Goal = {
   archived: boolean;
   color: string;
   initialSaved?: number;
+  bankSaved?: number;
   description?: string;
   icon?: string;
   createdAt?: string;
@@ -87,6 +90,7 @@ export type Data = {
   ledgers: Partial<Record<Currency, Ledger>>;
   holdings?: Holding[];
   exchangeRates?: ExchangeRates;
+  banking?: import("./banking").BankingLocal;
 };
 export const MAX_AMOUNT = 100_000_000_00;
 export const colors = [
@@ -235,7 +239,16 @@ export function summary(
       ledger.entries
         .filter((e) => e.type === "transfer")
         .reduce((s, e) => s + e.amount, 0) +
-      ledger.goals.reduce((s, g) => s + (g.initialSaved || 0), 0),
+      ledger.goals.reduce((s, g) => {
+        const manual =
+          (g.initialSaved || 0) +
+          ledger.entries
+            .filter((e) => e.type === "transfer" && e.goalId === g.id)
+            .reduce((sum, e) => sum + e.amount, 0);
+        return (
+          s + (g.initialSaved || 0) + Math.max(0, (g.bankSaved || 0) - manual)
+        );
+      }, 0),
   };
 }
 export function categorySpent(l: Ledger, month: string, id: string) {
@@ -311,6 +324,11 @@ export function recordEntry(l: Ledger, entry: Entry) {
   if (!entry.description.trim() || entry.description.length > 160)
     throw new Error("Enter a description.");
   if (
+    entry.note !== undefined &&
+    (typeof entry.note !== "string" || entry.note.length > 500)
+  )
+    throw new Error("Invalid note.");
+  if (
     !Number.isSafeInteger(entry.amount) ||
     entry.amount <= 0 ||
     entry.amount > MAX_AMOUNT
@@ -379,6 +397,7 @@ export function validateImport(input: unknown): Data {
       "analytics",
       "goals",
       "portfolio",
+      "banks",
       "settings",
     ].includes(d.defaultPage) ||
     !isObject(d.ledgers)
@@ -449,6 +468,7 @@ export function validateImport(input: unknown): Data {
           typeof g.archived !== "boolean" ||
           !/^#[a-fA-F0-9]{6}$/.test(g.color) ||
           (g.initialSaved !== undefined && !amount(g.initialSaved)) ||
+          (g.bankSaved !== undefined && !amount(g.bankSaved)) ||
           (g.description !== undefined && !str(g.description, 500)) ||
           (g.icon !== undefined && !icons.includes(g.icon)) ||
           (g.createdAt !== undefined && !validDate(g.createdAt)),
@@ -468,6 +488,7 @@ export function validateImport(input: unknown): Data {
           !e.amount ||
           !validDate(e.date) ||
           !str(e.description) ||
+          (e.note !== undefined && !str(e.note, 500)) ||
           !cat(e.categoryId) ||
           (e.type === "transfer" && !l.goals.some((g) => g.id === e.goalId)) ||
           (e.recurringId !== undefined && !id(e.recurringId)) ||
@@ -532,6 +553,40 @@ export function validateImport(input: unknown): Data {
       !unique(d.holdings))
   )
     return fail();
+  if (d.banking !== undefined) {
+    const b = d.banking;
+    if (
+      !isObject(b) ||
+      !str(b.ownerId, 100) ||
+      !["SANDBOX", "PRODUCTION"].includes(b.environment) ||
+      !Array.isArray(b.seen) ||
+      b.seen.length > 100000 ||
+      b.seen.some((x) => typeof x !== "string" || !/^[a-f0-9]{64}$/.test(x)) ||
+      !isObject(b.links) ||
+      Object.keys(b.links).length > 1000 ||
+      Object.entries(b.links).some(
+        ([key, value]) =>
+          !/^[a-f0-9]{64}$/.test(key) ||
+          !isObject(value) ||
+          !id(value.holdingId),
+      )
+    )
+      return fail();
+    if (
+      b.funding !== undefined &&
+      (!isObject(b.funding) ||
+        Object.keys(b.funding).length > 1000 ||
+        Object.entries(b.funding).some(
+          ([key, value]) =>
+            !/^[a-f0-9]{64}$/.test(key) ||
+            !isObject(value) ||
+            !id(value.goalId) ||
+            !CURRENCIES.includes(value.currency) ||
+            !amount(value.amount),
+        ))
+    )
+      return fail();
+  }
   if (d.exchangeRates !== undefined) {
     const r = d.exchangeRates;
     if (

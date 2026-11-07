@@ -13,6 +13,13 @@ export function GoalPlanner({ goal }: { goal: Goal }) {
         {t(p.status)}
       </span>
       {goal.description && <p>{goal.description}</p>}
+      {!!goal.bankSaved && (
+        <p>
+          {t("Bank balance reserved for this goal")}:{" "}
+          <strong>{fmt(goal.bankSaved)}</strong>.{" "}
+          {t("Already included in progress, not added to your contributions.")}
+        </p>
+      )}
       <dl className="finance-facts">
         <div>
           <dt>{t("Remaining")}</dt>
