@@ -65,7 +65,7 @@ Refunds reduce monthly/category spending; internal transfers affect neither inco
 - The spending chart supports full-area pointer/touch selection, arrow-key navigation, monthly or 7/14/21-day windows and a permanently full-width chart card. Cumulative values start at the beginning of the displayed range; refunds reduce expenses.
 - Notifications share `Notification.tsx` and appear at the top center, including rate updates. Use the existing `toast(message, undo?, { duration? })` context API for new notifications. Dismissal animates; hover/focus pauses the timer and Undo remains available. `liquid-glass.css` provides themed glass surfaces for notifications, dialogs, mobile navigation and compact selectors.
 - Existing version-1 backups remain readable. Holdings, rate cache and goal metadata are optional extensions; legacy records are not rewritten or reclassified. `refund` and `internal` are new entry types. Backups with these extensions require this or a newer MONETA version.
-- `finance.ts`, `Portfolio.tsx`, `GoalPlanner.tsx`, `transactionImport.ts`, `ImportWizard.tsx`, `finance.css` and `featureStrings.ts` extend the existing state and UI patterns. `finance.test.ts` covers financial rules and compatibility.
+- `finance.ts`, `Portfolio.tsx`, `GoalPlanner.tsx`, `features/transaction-import/`, `finance.css` and `featureStrings.ts` extend the existing state and UI patterns. `finance.test.ts` covers financial rules and compatibility.
 
 ## Architecture
 
@@ -73,7 +73,10 @@ Refunds reduce monthly/category spending; internal transfers affect neither inco
 - `src/persistence.ts`: versioned IndexedDB adapter. No network persistence.
 - `src/App.tsx`: application state, serialized persistence, recoverable draft allocations, shell and onboarding.
 - `src/ui.tsx`: forms, dialogs, accessible primitives and transaction list.
-- `src/Charts.tsx`, `Overview.tsx`, `Budget.tsx`, `Tools.tsx`: feature views.
+- `src/Overview.tsx`, `Budget.tsx`, `Portfolio.tsx`: dashboard and planning views.
+- `src/pages/`: separate Transactions, Analytics, Goals and Settings views (formerly `Tools.tsx`).
+- `src/features/transaction-import/`: import wizard, parsing, document recognition and adjacent tests. The wizard loads on demand, with preloading on pointer/focus intent; PDF and OCR engines retain their existing lazy loading.
+- `src/formatting.ts`: reusable locale formatters for exact money and transaction dates.
 - `src/i18n.ts`: interface translations; user-entered names remain unchanged.
 - `src/styles.css`: base component layouts and responsive behavior.
 - `src/fintech.css`: light/dark design tokens, glass materials, fintech layouts and motion.
@@ -92,3 +95,5 @@ The financial workspace is single-browser, with no cross-device ledger synchroni
 ## Verification
 
 See `QA.md` for the completed automated and browser checks and any verification limits.
+
+See `OPTIMIZATION.md` for the measured optimization results and refactoring boundaries.

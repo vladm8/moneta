@@ -1,40 +1,8 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { motionAllowed } from "./motion";
+import { useId, useState } from "react";
 import { useFinance, CategoryDetails, Money } from "./ui";
 import { summary } from "./engine";
 
 const donutRadius = 124;
-// Interpolate shares, not SVG path commands: arc flags cannot be morphed safely.
-function useDonutShares(target: Record<string, number>) {
-  const signature = JSON.stringify(target);
-  const [shares, setShares] = useState(target);
-  const current = useRef(target);
-  useEffect(() => {
-    const next: Record<string, number> = JSON.parse(signature);
-    if (!motionAllowed()) { current.current = next; setShares(next); return; }
-    let frame = 0;
-    let previous = performance.now();
-    const tick = (now: number) => {
-      const blend = 1 - Math.exp(-Math.min(now - previous, 64) / 55);
-      previous = now;
-      let pending = false;
-      const value: Record<string, number> = {};
-      for (const id of new Set([...Object.keys(current.current), ...Object.keys(next)])) {
-        const from = current.current[id] || 0, to = next[id] || 0;
-        const difference = to - from;
-        value[id] = Math.abs(difference) < 0.0001 ? to : from + difference * blend;
-        pending ||= value[id] !== to;
-      }
-      if (!motionAllowed()) { current.current = next; setShares(next); return; }
-      current.current = value;
-      setShares(value);
-      if (pending) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [signature]);
-  return shares;
-}
 function segmentPath(start: number, end: number, width: number) {
   const inner = donutRadius - width / 2;
   const outer = donutRadius + width / 2;
@@ -44,13 +12,20 @@ function segmentPath(start: number, end: number, width: number) {
 
   const point = (radius: number, angle: number) =>
     `${160 + radius * Math.cos(angle)} ${160 + radius * Math.sin(angle)}`;
+  // Short arcs keep their centre unambiguous, including almost-full circles.
+  const arc = (radius: number, from: number, to: number, clockwise: boolean) => {
+    const steps = Math.max(1, Math.ceil(Math.abs(to - from) / (Math.PI / 2)));
+    return Array.from({ length: steps }, (_, i) =>
+      `A ${radius} ${radius} 0 0 ${clockwise ? 1 : 0} ${point(radius, from + (to - from) * (i + 1) / steps)}`,
+    ).join(" ");
+  };
   return [
     `M ${point(outer, start + outerInset)}`,
-    `A ${outer} ${outer} 0 ${end - start - 2 * outerInset > Math.PI ? 1 : 0} 1 ${point(outer, end - outerInset)}`,
+    arc(outer, start + outerInset, end - outerInset, true),
     `Q ${point(outer, end)} ${point(outer - corner, end)}`,
     `L ${point(inner + corner, end)}`,
     `Q ${point(inner, end)} ${point(inner, end - innerInset)}`,
-    `A ${inner} ${inner} 0 ${end - start - 2 * innerInset > Math.PI ? 1 : 0} 0 ${point(inner, start + innerInset)}`,
+    arc(inner, end - innerInset, start + innerInset, false),
     `Q ${point(inner, start)} ${point(inner + corner, start)}`,
     `L ${point(outer - corner, start)}`,
     `Q ${point(outer, start)} ${point(outer, start + outerInset)} Z`,
@@ -85,11 +60,10 @@ export function Donut({
     },
   ];
   const total = Math.max(stats.income, stats.allocated);
-  const shares = useDonutShares(Object.fromEntries(segments.map(s => [s.id, total ? s.amount / total : 0])));
   const circ = 2 * Math.PI * donutRadius;
   let running = 0;
-  const arcs = segments.filter(s => (shares[s.id] || 0) > 0).map((segment) => {
-    const length = (shares[segment.id] || 0) * circ;
+  const arcs = segments.filter(s => s.amount > 0).map((segment) => {
+    const length = total ? (segment.amount / total) * circ : 0;
     const gap = Math.min(7, length * 0.18);
     const start = (running + gap / 2) / donutRadius - Math.PI / 2;
     running += length;

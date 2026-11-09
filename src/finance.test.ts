@@ -34,7 +34,7 @@ import {
   ocrRows,
   parseCSV,
   rowEntry,
-} from "./transactionImport";
+} from "./features/transaction-import/transactionImport";
 import { deleteData, loadData, persistData } from "./persistence";
 const rateFixture: ExchangeRates = {
   date: "2026-11-04",

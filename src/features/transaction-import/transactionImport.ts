@@ -9,7 +9,7 @@ import {
   type Data,
   type Entry,
   type Ledger,
-} from "./engine";
+} from "../../engine";
 export type ImportRow = {
   id: string;
   date: string;

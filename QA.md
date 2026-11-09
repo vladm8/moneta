@@ -106,6 +106,21 @@ No real-device Safari/iOS test, screen-reader audit, penetration test or cross-d
 - No real banking credentials were created or used, and no live bank connection or deployment is claimed. Sandbox/Restricted Production setup and exact callback addresses are documented in BANKING.md. The backend requires Node 24.14+; built-in SQLite currently emits an experimental-feature advisory.
 
 ## Publication status
+### Production optimization and cleanup — 2026-11-07
+
+- Preserved pending donut changes in checkpoint branch `backup/pre-optimization-20261107`. Split `Tools.tsx` into `src/pages/`; moved eight import-related files into `src/features/transaction-import/` and updated imports/tests. Banking source, API configuration, storage and financial formulas unchanged.
+- Cached locale formatters; memoized transaction lookup/filtering and import validation; deferred importer loading with pointer/focus preloading and localized error notifications. TypeScript now rejects unused locals/parameters. All dependencies have active uses and were retained. Removed one overridden CSS keyframe definition; effective animations unchanged.
+- `npm test -- --maxWorkers=1`: 101 tests passed across seven files. `npm run test:banking`: 21 tests passed. Production TypeScript/Vite build passed. One simultaneous test run timed out while starting workers during a long host interruption; the complete single-worker rerun passed.
+- Same-condition local formatting benchmark: 2,000 calls, median seven batches, 45.3 ms → 1.5 ms. Main production JS: 453,166 → 423,774 bytes; gzip 142,934 → 132,303 bytes (7.4% less). Importer now a deferred 30,455-byte chunk. Details and timing limitations in `OPTIMIZATION.md`; raw JSON under `qa/optimization/`.
+- Nine matched-state full-page screenshot comparisons (seven desktop pages, importer and mobile Overview). Eight exactly equal; Goals maximum channel difference 2/255, zero pixels above threshold 10. Video paused at frame zero. No redesign or animation-timing change; this does not establish frame-by-frame equivalence in every browser.
+- Headless Edge against the production preview verified importer absent from startup requests, on-demand loading, income create/edit, reviewed JSON import, delete, filtering, chart range/keyboard, exact 500-cent slider step, bounded donut geometry, 390 px layout and reduced motion. No runtime errors. Earlier 2,000-row render/filter measurements remain indicative rather than a reliable production latency claim.
+- Existing PDF chunk-size and experimental Node SQLite advisories remain. No real-device Safari, production network, frame-rate or render-count measurement was made.
+
+### Donut rendering correction — 2026-11-07
+
+- Removed share interpolation after the reported distortion; slider values now directly determine SVG geometry. Long arcs are split into at most quarter-circle arcs, ring width remains constant, and SVG overflow is contained.
+- Production build passed. Headless Edge checked actual segment bounding boxes for zero allocation, full/near-full allocation, repeated zero crossings, 55 slider steps and mobile width. All paths remained within the ring bounds, without runtime errors. Visually reviewed `qa/donut-stable.png`.
+
 ### Motion refinement — 2026-11-07
 
 - Donut geometry now follows interpolated shares instead of CSS path morphing; ring thickness stays fixed. Sidebar icons remain stationary. Overview cards enter individually with 70 ms stagger, including mobile, without an overlapping page snapshot animation.

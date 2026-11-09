@@ -1,13 +1,5 @@
+import { ArrowUpRight, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, RefreshCw, ArrowUpRight } from "lucide-react";
-import {
-  useFinance,
-  Money,
-  ErrorText,
-  Confirm,
-  Empty,
-  SectionHeader,
-} from "./ui";
 import {
   CURRENCIES,
   money,
@@ -17,6 +9,14 @@ import {
   type Holding,
 } from "./engine";
 import { fetchNBPRates, portfolio, RATE_SCALE } from "./finance";
+import {
+  Confirm,
+  Empty,
+  ErrorText,
+  Money,
+  SectionHeader,
+  useFinance,
+} from "./ui";
 const types: Record<Holding["type"], string> = {
   cash: "Cash",
   savings: "Savings balance",
@@ -116,7 +116,7 @@ function HoldingForm({ holding }: { holding?: Holding }) {
   );
 }
 export function PortfolioSummary({ compact = false }: { compact?: boolean }) {
-  const { data, fmt, t, setPage } = useFinance();
+  const { data, t, setPage } = useFinance();
   const p = portfolio(data.holdings || [], data.currency, data.exchangeRates);
   return (
     <section className={`panel portfolio-summary ${compact ? "compact" : ""}`}>
@@ -150,11 +150,15 @@ export function PortfolioSummary({ compact = false }: { compact?: boolean }) {
                 {t("Assets")}
                 {p.missing ? ` · ${t("Partial valuation")}` : ""}
               </dt>
-              <dd><Money value={p.assets} /></dd>
+              <dd>
+                <Money value={p.assets} />
+              </dd>
             </div>
             <div>
               <dt>{t("Liabilities")}</dt>
-              <dd><Money value={p.liabilities} /></dd>
+              <dd>
+                <Money value={p.liabilities} />
+              </dd>
             </div>
           </dl>
         </>

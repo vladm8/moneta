@@ -1,4 +1,8 @@
 export const featureStrings: Record<string, [string, string]> = {
+  "Could not load transaction import. Try again.": [
+    "Nie udało się wczytać importu transakcji. Spróbuj ponownie.",
+    "Не вдалося завантажити імпорт операцій. Спробуй ще раз.",
+  ],
   "Bank connections are stored on your server. Disconnect banks before deleting their data; clearing this browser does not revoke consent.":
     [
       "Połączenia bankowe są zapisane na Twoim serwerze. Odłącz banki przed usunięciem ich danych; wyczyszczenie przeglądarki nie odwołuje zgód.",

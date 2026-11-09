@@ -1,3 +1,5 @@
+import { formatCurrency } from "./formatting";
+
 export const CURRENCIES = ["PLN", "EUR", "USD", "UAH", "GBP"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 export type Language = "pl" | "en" | "uk";
@@ -153,12 +155,7 @@ export function money(
   lang: Language,
   decimals = true,
 ) {
-  return new Intl.NumberFormat(locale(lang), {
-    style: "currency",
-    currency,
-    minimumFractionDigits: decimals ? 2 : 0,
-    maximumFractionDigits: decimals ? 2 : 0,
-  }).format(amount / 100);
+  return formatCurrency(amount, currency, locale(lang), decimals);
 }
 // All persisted money uses safe integer minor units. Input rounds half up at the third decimal.
 export function parseMoney(value: string): number {

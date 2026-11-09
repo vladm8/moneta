@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { pdfTextLines } from "./pdfText";
 import { ocrRows, commitImport } from "./transactionImport";
-import { initialData } from "./engine";
+import { initialData } from "../../engine";
 const item = (str: string, x: number, y: number) => ({
   str,
   transform: [1, 0, 0, 1, x, y],

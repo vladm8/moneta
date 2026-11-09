@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { recognizeDocument, type DocumentText } from "./documentRecognition";
 import { readImage } from "./imageRecognition";
 import type { PDFPage } from "./pdfImport";
 import type { Worker } from "tesseract.js";
 import { Upload, Plus, ArrowLeft, Check } from "lucide-react";
-import { useFinance, ErrorText, Progress } from "./ui";
-import { CURRENCIES, emptyLedger, today, type Currency } from "./engine";
+import { useFinance, ErrorText, Progress } from "../../ui";
+import { CURRENCIES, emptyLedger, today, type Currency } from "../../engine";
 import {
   commitImport,
   duplicateIndex,
@@ -203,32 +203,38 @@ export function TransactionImport({ onClose }: { onClose: () => void }) {
       if (active.current) setBusy(false);
     }
   }
-  const selected = rows.filter((r) => r.include);
-  let commitError = "";
-  try {
-    if (selected.length) commitImport(data, rows);
-  } catch (err) {
-    commitError = (err as Error).message;
-  }
-  // Detect duplicates against saved entries and earlier included rows, including within this file.
-  const seen = new Map<string, ReturnType<typeof duplicateIndex>>();
-  const issues = new Map<string, { error: string; duplicate: string | null }>();
-  for (const r of rows) {
-    let issue = "",
-      duplicate = null;
+  const { selected, commitError, issues } = useMemo(() => {
+    const selected = rows.filter((r) => r.include);
+    let commitError = "";
     try {
-      const e = rowEntry(r);
-      const l =
-        seen.get(r.currency) ||
-        duplicateIndex(data.ledgers[r.currency as Currency] || emptyLedger());
-      duplicate = l.kind(e);
-      if (r.include) l.add(e);
-      seen.set(r.currency, l);
+      if (selected.length) commitImport(data, rows);
     } catch (err) {
-      issue = (err as Error).message;
+      commitError = (err as Error).message;
     }
-    issues.set(r.id, { error: issue, duplicate });
-  }
+    // Detect duplicates against saved entries and earlier included rows, including within this file.
+    const seen = new Map<string, ReturnType<typeof duplicateIndex>>();
+    const issues = new Map<
+      string,
+      { error: string; duplicate: string | null }
+    >();
+    for (const r of rows) {
+      let issue = "",
+        duplicate = null;
+      try {
+        const e = rowEntry(r);
+        const l =
+          seen.get(r.currency) ||
+          duplicateIndex(data.ledgers[r.currency as Currency] || emptyLedger());
+        duplicate = l.kind(e);
+        if (r.include) l.add(e);
+        seen.set(r.currency, l);
+      } catch (err) {
+        issue = (err as Error).message;
+      }
+      issues.set(r.id, { error: issue, duplicate });
+    }
+    return { selected, commitError, issues };
+  }, [data, rows]);
   const needsAttention = (r: ImportRow) =>
     !!issues.get(r.id)?.error || !!issues.get(r.id)?.duplicate;
   const visibleRows = rows.filter(

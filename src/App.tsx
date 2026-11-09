@@ -1,61 +1,64 @@
 import {
+  ArrowLeftRight,
+  ArrowRight,
+  ArrowUpRight,
+  ChartNoAxesCombined,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Leaf,
+  Menu,
+  Moon,
+  Plus,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sun,
+  Wallet,
+  X,
+} from "lucide-react";
+import {
   useCallback,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import {
-  LayoutDashboard,
-  ChartNoAxesCombined,
-  ArrowLeftRight,
-  SlidersHorizontal,
-  Leaf,
-  Settings as SettingsIcon,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Sun,
-  Moon,
-  ShieldCheck,
-  ArrowUpRight,
-  Check,
-  Menu,
-  X,
-  ArrowRight,
-  Wallet,
-} from "lucide-react";
-import {
-  type Data,
-  type Page,
-  type Ledger,
-  type Currency,
-  type Language,
-  initialData,
-  getLedger,
-  money,
-  thisMonth,
-  shiftMonth,
-  locale,
-  demoData,
-  starterCategories,
-  parseMoney,
-  uid,
-  recordEntry,
-  emptyLedger,
-  validateImport,
-} from "./engine";
-import { loadData, persistData } from "./persistence";
-import { translate } from "./i18n";
-import { Finance, ModalHost, EntryForm, ErrorText } from "./ui";
-import { NavGlider, navigateWithMotion, useInteractionLight } from "./motion";
-import { Overview } from "./Overview";
-import { Budget } from "./Budget";
-import { Transactions, Analytics, Goals, Settings } from "./Tools";
 import { AmbientBackground } from "./AmbientBackground";
-import { Portfolio } from "./Portfolio";
+import { Budget } from "./Budget";
 import { ConnectedBanks } from "./ConnectedBanks";
+import {
+  demoData,
+  emptyLedger,
+  getLedger,
+  initialData,
+  locale,
+  money,
+  parseMoney,
+  recordEntry,
+  shiftMonth,
+  starterCategories,
+  thisMonth,
+  uid,
+  validateImport,
+  type Currency,
+  type Data,
+  type Language,
+  type Ledger,
+  type Page,
+} from "./engine";
+import { translate } from "./i18n";
+import { NavGlider, navigateWithMotion, useInteractionLight } from "./motion";
 import { Notification, type ToastOptions } from "./Notification";
+import { Overview } from "./Overview";
+import { Analytics } from "./pages/Analytics";
+import { Goals } from "./pages/Goals";
+import { Settings } from "./pages/Settings";
+import { Transactions } from "./pages/Transactions";
+import { loadData, persistData } from "./persistence";
+import { Portfolio } from "./Portfolio";
+import { EntryForm, Finance, ModalHost } from "./ui";
 const navigation = [
   ["overview", "Overview", LayoutDashboard],
   ["budget", "Budget", SlidersHorizontal],
@@ -443,7 +446,10 @@ export default function App() {
     if (/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) setMonthState(m);
   };
   const setPage = (p: Page) => {
-    if (p === page) { setMenu(false); return; }
+    if (p === page) {
+      setMenu(false);
+      return;
+    }
     navigateWithMotion(() => {
       setPageState(p);
       setMenu(false);
@@ -763,7 +769,9 @@ export default function App() {
           ))}
         </nav>
       </div>
-      <ModalHost onClose={close} returnFocus={modalReturnFocus}>{modalContent}</ModalHost>
+      <ModalHost onClose={close} returnFocus={modalReturnFocus}>
+        {modalContent}
+      </ModalHost>
       {toast && (
         <Notification
           key={toast.id}

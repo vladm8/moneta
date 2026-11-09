@@ -113,7 +113,8 @@ input[type="checkbox"]:active { transform: scale(.9); }
 @keyframes chart-wash { from { opacity: 0; } }
 .trend-cursor { animation: entrance-fade 120ms ease-out; }
 .trend-cursor-dot { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--green) 45%, transparent)); }
-.donut-segment { animation: none; transition: opacity 180ms, filter 180ms; }
+.donut { overflow: hidden; }
+.donut-segment { animation: none; transform: none; transition: opacity 180ms, filter 180ms; }
 .donut-segment:hover, .donut-segment:focus-visible { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--green) 16%, transparent)); }
 .chart-legend .dot { transition: transform 230ms var(--motion-ease); }
 .chart-legend .highlighted .dot { transform: scale(1.3); }

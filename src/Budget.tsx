@@ -1,43 +1,42 @@
-import { useEffect, useState, useRef } from "react";
 import {
-  SlidersHorizontal,
   AlertCircle,
-  Bookmark,
-  Copy,
-  Check,
-  Plus,
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
+  Bookmark,
+  Check,
+  Copy,
   Pencil,
+  Plus,
   RotateCcw,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Donut } from "./Charts";
 import {
-  useFinance,
-  SectionHeader,
-  Empty,
-  CategoryIcon,
-  CategoryForm,
-  CategoryDetails,
-  DeleteCategoryConfirm,
-  Progress,
-  ErrorText,
-  EntryForm,
-} from "./ui";
-import {
-  summary,
   categorySpent,
+  distribute,
   parseMoney,
   percentAmount,
-  savePlan,
-  distribute,
   presetPlan,
+  savePlan,
   shiftMonth,
+  summary,
   uid,
   type Category,
 } from "./engine";
-import { Donut } from "./Charts";
-import { ALLOCATION_STEP, sliderAmount, exactAllocation } from "./finance";
+import { ALLOCATION_STEP, exactAllocation, sliderAmount } from "./finance";
+import {
+  CategoryDetails,
+  CategoryForm,
+  CategoryIcon,
+  DeleteCategoryConfirm,
+  Empty,
+  EntryForm,
+  ErrorText,
+  SectionHeader,
+  useFinance,
+} from "./ui";
 function AllocationRow({
   category,
   amount,

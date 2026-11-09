@@ -3,12 +3,14 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
   type RefObject,
 } from "react";
 import { motionAllowed, useListMotion, useValueMotion } from "./motion";
+import { formatTransactionDate } from "./formatting";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -910,6 +912,7 @@ export function TransactionList({
 }) {
   const { ledger, t, fmt, modal, updateLedger, toast, data } = useFinance();
   const listRef = useRef<HTMLDivElement>(null);
+  const categories = useMemo(() => new Map(ledger.categories.map(c => [c.id, c])), [ledger.categories]);
   useListMotion(listRef, entries.map(e => e.id).join("|"));
   if (!entries.length)
     return (
@@ -921,7 +924,7 @@ export function TransactionList({
   return (
     <div ref={listRef} className={`transaction-list ${compact ? "compact" : ""}`}>
       {entries.map((e) => {
-        const cat = ledger.categories.find((c) => c.id === e.categoryId);
+        const cat = categories.get(e.categoryId);
         return (
           <div className="transaction" key={e.id} data-motion-id={e.id}>
             <CategoryIcon
@@ -953,10 +956,7 @@ export function TransactionList({
               </small>
             </button>
             <span className="transaction-date">
-              {new Date(e.date + "T12:00:00").toLocaleDateString(
-                data.language,
-                { day: "numeric", month: "short" },
-              )}
+              {formatTransactionDate(e.date, data.language)}
             </span>
             <span className={`transaction-amount ${e.type}`}>
               <span>
